@@ -11,13 +11,48 @@ model User {
   id              String   @id @default(cuid())
   email           String   @unique
   password        String
+
   firstName       String
   lastName        String?
+
   phone           String?
+
+  city            String?
+  state           String?
+  neighborhood    String?
+
+  profession      String?
+  description     String?
+
+  profilePhoto    String?
+
   role            String   @default("USER")
+  status          String   @default("ACTIVE")
+  emailVerified   Boolean  @default(false)
+
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
-  emailVerified   Boolean  @default(false)
-  profilePhoto    String?
-  status          String   @default("ACTIVE")
+posts Post[]
+}
+model Post {
+  id            String   @id @default(cuid())
+
+  title         String
+  description   String
+
+  category      String
+
+  city          String
+  state         String
+  neighborhood  String?
+
+  price         Float?
+
+  status        String   @default("ACTIVE")
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  userId        String
+  user          User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
