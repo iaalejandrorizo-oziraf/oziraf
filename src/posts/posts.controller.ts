@@ -1,6 +1,10 @@
 import {
   Body,
   Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
   Post,
   Request,
   UseGuards,
@@ -25,4 +29,41 @@ export class PostsController {
       createPostDto,
     );
   }
+
+  @Get()
+  async findAll() {
+    return this.postsService.findAll();
+  }
+
+  @Get(':id')
+  async findOne(
+    @Param('id') id: string,
+  ) {
+    return this.postsService.findOne(id);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Patch(':id')
+  async update(
+    @Param('id') id: string,
+    @Request() req,
+    @Body() createPostDto: CreatePostDto,
+  ) {
+    return this.postsService.update(
+      id,
+      req.user.userId,
+      createPostDto,
+    );
+  }
+  @UseGuards(JwtAuthGuard)
+@Delete(':id')
+async remove(
+  @Param('id') id: string,
+  @Request() req,
+) {
+  return this.postsService.remove(
+    id,
+    req.user.userId,
+  );
+}
 }
