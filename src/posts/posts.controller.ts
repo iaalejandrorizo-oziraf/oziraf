@@ -6,6 +6,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   Request,
   UseGuards,
 } from '@nestjs/common';
@@ -34,7 +35,22 @@ export class PostsController {
   async findAll() {
     return this.postsService.findAll();
   }
-
+@Get('search')
+async search(
+  @Query('q') q?: string,
+  @Query('category') category?: string,
+  @Query('country') country?: string,
+  @Query('state') state?: string,
+  @Query('city') city?: string,
+) {
+  return this.postsService.search({
+    q,
+    category,
+    country,
+    state,
+    city,
+  });
+}
   @Get(':id')
   async findOne(
     @Param('id') id: string,

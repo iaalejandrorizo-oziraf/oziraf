@@ -126,4 +126,82 @@ export class PostsService {
       },
     });
   }
+  async search(filters: {
+  q?: string;
+  category?: string;
+  country?: string;
+  state?: string;
+  city?: string;
+}) {
+  const { q, category, country, state, city } = filters;
+
+  return this.prisma.post.findMany({
+    where: {
+      status: 'ACTIVE',
+
+      ...(category && {
+        category: {
+          contains: category,
+          mode: 'insensitive',
+        },
+      }),
+
+      ...(country && {
+        country: {
+          contains: country,
+          mode: 'insensitive',
+        },
+      }),
+
+      ...(state && {
+        state: {
+          contains: state,
+          mode: 'insensitive',
+        },
+      }),
+
+      ...(city && {
+        city: {
+          contains: city,
+          mode: 'insensitive',
+        },
+      }),
+
+      ...(q && {
+        OR: [
+          {
+            title: {
+              contains: q,
+              mode: 'insensitive',
+            },
+          },
+          {
+            description: {
+              contains: q,
+              mode: 'insensitive',
+            },
+          },
+        ],
+      }),
+    },
+
+    include: {
+      user: {
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          profession: true,
+          city: true,
+          state: true,
+          profilePhoto: true,
+        },
+      },
+    },
+
+    orderBy: {
+      createdAt: 'desc',
+    },
+  });
+}
 }

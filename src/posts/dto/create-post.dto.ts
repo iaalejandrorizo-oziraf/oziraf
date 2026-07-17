@@ -15,6 +15,9 @@ export class CreatePostDto {
   category: string;
 
   @IsString()
+  country: string;
+
+  @IsString()
   city: string;
 
   @IsString()
