@@ -32,4 +32,8 @@ export class UpdateProfileDto {
   @IsOptional()
   @IsString()
   description?: string;
+
+  @IsOptional()
+  @IsString()
+  profilePhoto?: string;
 }

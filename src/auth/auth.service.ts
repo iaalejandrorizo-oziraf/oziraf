@@ -17,9 +17,7 @@ export class AuthService {
   ) {}
 
   async register(registerDto: RegisterDto) {
-    const existingUser = await this.usersService.findByEmail(
-      registerDto.email,
-    );
+    const existingUser = await this.usersService.findByEmail(registerDto.email);
 
     if (existingUser) {
       throw new ConflictException('El correo ya está registrado');
@@ -33,6 +31,12 @@ export class AuthService {
       firstName: registerDto.firstName,
       lastName: registerDto.lastName,
       phone: registerDto.phone,
+      city: registerDto.city,
+      state: registerDto.state,
+      neighborhood: registerDto.neighborhood,
+      profession: registerDto.profession,
+      description: registerDto.description,
+      profilePhoto: registerDto.profilePhoto,
     });
   }
 
@@ -40,9 +44,7 @@ export class AuthService {
     const user = await this.usersService.findByEmail(loginDto.email);
 
     if (!user) {
-      throw new UnauthorizedException(
-        'Correo o contraseña incorrectos',
-      );
+      throw new UnauthorizedException('Correo o contraseña incorrectos');
     }
 
     const passwordValid = await bcrypt.compare(
@@ -51,9 +53,7 @@ export class AuthService {
     );
 
     if (!passwordValid) {
-      throw new UnauthorizedException(
-        'Correo o contraseña incorrectos',
-      );
+      throw new UnauthorizedException('Correo o contraseña incorrectos');
     }
 
     const payload = {

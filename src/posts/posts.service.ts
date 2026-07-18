@@ -66,11 +66,7 @@ export class PostsService {
   }
 
   // Actualizar publicación
-  async update(
-    id: string,
-    userId: string,
-    data: CreatePostDto,
-  ) {
+  async update(id: string, userId: string, data: CreatePostDto) {
     const post = await this.prisma.post.findUnique({
       where: {
         id,
@@ -78,9 +74,7 @@ export class PostsService {
     });
 
     if (!post) {
-      throw new NotFoundException(
-        'La publicación no existe',
-      );
+      throw new NotFoundException('La publicación no existe');
     }
 
     if (post.userId !== userId) {
@@ -98,10 +92,7 @@ export class PostsService {
   }
 
   // Eliminar publicación
-  async remove(
-    id: string,
-    userId: string,
-  ) {
+  async remove(id: string, userId: string) {
     const post = await this.prisma.post.findUnique({
       where: {
         id,
@@ -109,9 +100,7 @@ export class PostsService {
     });
 
     if (!post) {
-      throw new NotFoundException(
-        'La publicación no existe',
-      );
+      throw new NotFoundException('La publicación no existe');
     }
 
     if (post.userId !== userId) {
@@ -127,81 +116,81 @@ export class PostsService {
     });
   }
   async search(filters: {
-  q?: string;
-  category?: string;
-  country?: string;
-  state?: string;
-  city?: string;
-}) {
-  const { q, category, country, state, city } = filters;
+    q?: string;
+    category?: string;
+    country?: string;
+    state?: string;
+    city?: string;
+  }) {
+    const { q, category, country, state, city } = filters;
 
-  return this.prisma.post.findMany({
-    where: {
-      status: 'ACTIVE',
+    return this.prisma.post.findMany({
+      where: {
+        status: 'ACTIVE',
 
-      ...(category && {
-        category: {
-          contains: category,
-          mode: 'insensitive',
-        },
-      }),
-
-      ...(country && {
-        country: {
-          contains: country,
-          mode: 'insensitive',
-        },
-      }),
-
-      ...(state && {
-        state: {
-          contains: state,
-          mode: 'insensitive',
-        },
-      }),
-
-      ...(city && {
-        city: {
-          contains: city,
-          mode: 'insensitive',
-        },
-      }),
-
-      ...(q && {
-        OR: [
-          {
-            title: {
-              contains: q,
-              mode: 'insensitive',
-            },
+        ...(category && {
+          category: {
+            contains: category,
+            mode: 'insensitive',
           },
-          {
-            description: {
-              contains: q,
-              mode: 'insensitive',
-            },
-          },
-        ],
-      }),
-    },
+        }),
 
-    include: {
-      user: {
-        select: {
-          id: true,
-          firstName: true,
-          lastName: true,
-          profession: true,
-          city: true,
-          state: true,
-          profilePhoto: true,
+        ...(country && {
+          country: {
+            contains: country,
+            mode: 'insensitive',
+          },
+        }),
+
+        ...(state && {
+          state: {
+            contains: state,
+            mode: 'insensitive',
+          },
+        }),
+
+        ...(city && {
+          city: {
+            contains: city,
+            mode: 'insensitive',
+          },
+        }),
+
+        ...(q && {
+          OR: [
+            {
+              title: {
+                contains: q,
+                mode: 'insensitive',
+              },
+            },
+            {
+              description: {
+                contains: q,
+                mode: 'insensitive',
+              },
+            },
+          ],
+        }),
+      },
+
+      include: {
+        user: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            profession: true,
+            city: true,
+            state: true,
+            profilePhoto: true,
+          },
         },
       },
-    },
 
-    orderBy: {
-      createdAt: 'desc',
-    },
-  });
-}
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+  }
 }

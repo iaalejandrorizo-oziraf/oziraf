@@ -26,6 +26,7 @@ model User {
   profession    String?
   state         String?
   posts         Post[]
+  favorites     Favorite[]
 }
 
 model Post {
@@ -43,4 +44,16 @@ model Post {
   userId       String
   country      String   @default("México")
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  favorites    Favorite[]
+}
+
+model Favorite {
+  id        String   @id @default(cuid())
+  userId    String
+  postId    String
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, postId])
 }

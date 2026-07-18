@@ -21,40 +21,34 @@ export class PostsController {
 
   @UseGuards(JwtAuthGuard)
   @Post()
-  async create(
-    @Request() req,
-    @Body() createPostDto: CreatePostDto,
-  ) {
-    return this.postsService.create(
-      req.user.userId,
-      createPostDto,
-    );
+  async create(@Request() req, @Body() createPostDto: CreatePostDto) {
+    return this.postsService.create(req.user.userId, createPostDto);
   }
 
   @Get()
   async findAll() {
     return this.postsService.findAll();
   }
-@Get('search')
-async search(
-  @Query('q') q?: string,
-  @Query('category') category?: string,
-  @Query('country') country?: string,
-  @Query('state') state?: string,
-  @Query('city') city?: string,
-) {
-  return this.postsService.search({
-    q,
-    category,
-    country,
-    state,
-    city,
-  });
-}
-  @Get(':id')
-  async findOne(
-    @Param('id') id: string,
+
+  @Get('search')
+  async search(
+    @Query('q') q?: string,
+    @Query('category') category?: string,
+    @Query('country') country?: string,
+    @Query('state') state?: string,
+    @Query('city') city?: string,
   ) {
+    return this.postsService.search({
+      q,
+      category,
+      country,
+      state,
+      city,
+    });
+  }
+
+  @Get(':id')
+  async findOne(@Param('id') id: string) {
     return this.postsService.findOne(id);
   }
 
@@ -65,21 +59,12 @@ async search(
     @Request() req,
     @Body() createPostDto: CreatePostDto,
   ) {
-    return this.postsService.update(
-      id,
-      req.user.userId,
-      createPostDto,
-    );
+    return this.postsService.update(id, req.user.userId, createPostDto);
   }
+
   @UseGuards(JwtAuthGuard)
-@Delete(':id')
-async remove(
-  @Param('id') id: string,
-  @Request() req,
-) {
-  return this.postsService.remove(
-    id,
-    req.user.userId,
-  );
-}
+  @Delete(':id')
+  async remove(@Param('id') id: string, @Request() req) {
+    return this.postsService.remove(id, req.user.userId);
+  }
 }
