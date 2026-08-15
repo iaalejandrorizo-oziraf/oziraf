@@ -213,9 +213,12 @@ export class PostsService {
       );
     }
 
-    return this.prisma.post.delete({
+    return this.prisma.post.update({
       where: {
         id,
+      },
+      data: {
+        status: 'DELETED',
       },
     });
   }

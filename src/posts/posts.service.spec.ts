@@ -316,4 +316,31 @@ describe('PostsService', () => {
       }),
     ).rejects.toBeInstanceOf(ForbiddenException);
   });
+
+  it('soft deletes a post when it belongs to the user', async () => {
+    const existingPost = {
+      id: 'post-1',
+      title: 'Servicio de arquitectura',
+      userId: 'user-1',
+    };
+    const deletedPost = {
+      ...existingPost,
+      status: 'DELETED',
+    };
+    prisma.post.findUnique.mockResolvedValue(existingPost);
+    prisma.post.update.mockResolvedValue(deletedPost);
+
+    const result = await service.remove('post-1', 'user-1');
+
+    expect(prisma.post.update).toHaveBeenCalledWith({
+      where: {
+        id: 'post-1',
+      },
+      data: {
+        status: 'DELETED',
+      },
+    });
+    expect(prisma.post.delete).not.toHaveBeenCalled();
+    expect(result).toBe(deletedPost);
+  });
 });

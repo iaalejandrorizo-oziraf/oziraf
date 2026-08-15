@@ -94,7 +94,7 @@ The API uses a global validation pipe with:
 - query/body transformation enabled
 
 Current protections include trimmed text input, length limits, valid profile photo URLs, positive prices, paginated listings and public user responses without passwords.
-Public post listings return only active posts. Users cannot add their own posts to favorites.
+Public post listings return only active posts. Deleting a post marks it as `DELETED` instead of removing the row. Users cannot add their own posts to favorites.
 
 ## Paginated Responses
 
