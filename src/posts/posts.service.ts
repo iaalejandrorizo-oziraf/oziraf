@@ -11,6 +11,8 @@ import {
   buildPaginatedResponse,
   getPagination,
 } from '../common/utils/pagination.util';
+import { AdminListPostsQueryDto } from './dto/admin-list-posts-query.dto';
+import { AdminUpdatePostStatusDto } from './dto/admin-update-post-status.dto';
 import { CreatePostDto } from './dto/create-post.dto';
 import { ListPostsQueryDto } from './dto/list-posts-query.dto';
 import { MyPostsQueryDto } from './dto/my-posts-query.dto';
@@ -181,6 +183,28 @@ export class PostsService {
     };
   }
 
+  async findAllForAdmin(options?: AdminListPostsQueryDto) {
+    const where: Prisma.PostWhereInput = {
+      ...(options?.status && {
+        status: options.status,
+      }),
+    };
+
+    const [posts, total] = await Promise.all([
+      this.prisma.post.findMany({
+        where,
+        include: postUserInclude,
+        ...getPagination(options),
+        orderBy: getPostOrderBy(options),
+      }),
+      this.prisma.post.count({
+        where,
+      }),
+    ]);
+
+    return buildPaginatedResponse(posts, total, options);
+  }
+
   // Obtener una publicación por ID
   async findOne(id: string) {
     const post = await this.prisma.post.findUnique({
@@ -250,6 +274,30 @@ export class PostsService {
       },
       data: {
         status: updatePostStatusDto.status,
+      },
+    });
+  }
+
+  async updateStatusForAdmin(
+    id: string,
+    adminUpdatePostStatusDto: AdminUpdatePostStatusDto,
+  ) {
+    const post = await this.prisma.post.findUnique({
+      where: {
+        id,
+      },
+    });
+
+    if (!post) {
+      throw new NotFoundException('La publicación no existe');
+    }
+
+    return this.prisma.post.update({
+      where: {
+        id,
+      },
+      data: {
+        status: adminUpdatePostStatusDto.status,
       },
     });
   }

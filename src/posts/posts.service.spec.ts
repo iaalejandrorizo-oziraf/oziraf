@@ -254,6 +254,62 @@ describe('PostsService', () => {
     });
   });
 
+  it('finds posts for admins with pagination and status filters', async () => {
+    const posts = [
+      {
+        id: 'post-1',
+        title: 'Servicio de arquitectura',
+        status: 'INACTIVE',
+      },
+    ];
+    prisma.post.findMany.mockResolvedValue(posts);
+    prisma.post.count.mockResolvedValue(1);
+
+    const result = await service.findAllForAdmin({
+      page: 1,
+      limit: 10,
+      status: 'INACTIVE',
+      sortBy: 'createdAt',
+      sortOrder: 'desc',
+    });
+
+    expect(prisma.post.findMany).toHaveBeenCalledWith({
+      where: {
+        status: 'INACTIVE',
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            profession: true,
+            city: true,
+            state: true,
+            profilePhoto: true,
+          },
+        },
+      },
+      skip: 0,
+      take: 10,
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+    expect(prisma.post.count).toHaveBeenCalledWith({
+      where: {
+        status: 'INACTIVE',
+      },
+    });
+    expect(result).toEqual({
+      data: posts,
+      page: 1,
+      limit: 10,
+      total: 1,
+      totalPages: 1,
+    });
+  });
+
   it('finds one post by id', async () => {
     const post = {
       id: 'post-1',
@@ -423,6 +479,44 @@ describe('PostsService', () => {
         status: 'INACTIVE',
       }),
     ).rejects.toBeInstanceOf(ForbiddenException);
+  });
+
+  it('updates a post status for admins', async () => {
+    const existingPost = {
+      id: 'post-1',
+      status: 'ACTIVE',
+      userId: 'user-1',
+    };
+    const updatedPost = {
+      ...existingPost,
+      status: 'DELETED',
+    };
+    prisma.post.findUnique.mockResolvedValue(existingPost);
+    prisma.post.update.mockResolvedValue(updatedPost);
+
+    const result = await service.updateStatusForAdmin('post-1', {
+      status: 'DELETED',
+    });
+
+    expect(prisma.post.update).toHaveBeenCalledWith({
+      where: {
+        id: 'post-1',
+      },
+      data: {
+        status: 'DELETED',
+      },
+    });
+    expect(result).toBe(updatedPost);
+  });
+
+  it('rejects admin status updates for missing posts', async () => {
+    prisma.post.findUnique.mockResolvedValue(null);
+
+    await expect(
+      service.updateStatusForAdmin('post-1', {
+        status: 'DELETED',
+      }),
+    ).rejects.toBeInstanceOf(NotFoundException);
   });
 
   it('soft deletes a post when it belongs to the user', async () => {

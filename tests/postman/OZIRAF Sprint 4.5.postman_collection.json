@@ -1117,6 +1117,118 @@
           ]
         },
         {
+          "name": "Admin list posts",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/posts/admin?page=1&limit=10&status=INACTIVE",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "posts",
+                "admin"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                },
+                {
+                  "key": "status",
+                  "value": "INACTIVE"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Admin posts request is protected or returned', function () {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([200, 403]);",
+                  "});",
+                  "if (pm.response.code === 200) {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.data).to.be.an('array');",
+                  "  pm.expect(json.page).to.be.a('number');",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin update post status",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"INACTIVE\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/posts/admin/{{post_id}}/status",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "posts",
+                "admin",
+                "{{post_id}}",
+                "status"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Admin post status update is protected or handled', function () {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([200, 403, 404]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
           "name": "Delete",
           "request": {
             "auth": {

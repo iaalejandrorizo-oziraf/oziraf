@@ -65,6 +65,8 @@ npm run start:dev
 - `GET /posts/me?page=1&limit=10&sortBy=createdAt&sortOrder=desc&status=INACTIVE`
 - `GET /posts/search?q=arquitectura&minPrice=1000&maxPrice=5000&page=1&limit=10&sortBy=createdAt&sortOrder=desc`
 - `GET /posts/filters`
+- `GET /posts/admin?page=1&limit=10&status=INACTIVE`
+- `PATCH /posts/admin/:id/status`
 - `GET /posts/:id`
 - `PATCH /posts/:id/status`
 - `PATCH /posts/:id`

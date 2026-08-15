@@ -10,9 +10,11 @@ describe('PostsController', () => {
     findFilters: jest.Mock;
     findMine: jest.Mock;
     findMyStats: jest.Mock;
+    findAllForAdmin: jest.Mock;
     findOne: jest.Mock;
     update: jest.Mock;
     updateStatus: jest.Mock;
+    updateStatusForAdmin: jest.Mock;
     remove: jest.Mock;
     search: jest.Mock;
   };
@@ -24,9 +26,11 @@ describe('PostsController', () => {
       findFilters: jest.fn(),
       findMine: jest.fn(),
       findMyStats: jest.fn(),
+      findAllForAdmin: jest.fn(),
       findOne: jest.fn(),
       update: jest.fn(),
       updateStatus: jest.fn(),
+      updateStatusForAdmin: jest.fn(),
       remove: jest.fn(),
       search: jest.fn(),
     };
@@ -172,6 +176,48 @@ describe('PostsController', () => {
 
     expect(postsService.findMyStats).toHaveBeenCalledWith('user-1');
     expect(result).toBe(stats);
+  });
+
+  it('returns paginated posts for admins', async () => {
+    const response = {
+      data: [],
+      page: 1,
+      limit: 10,
+      total: 0,
+      totalPages: 0,
+    };
+    postsService.findAllForAdmin.mockResolvedValue(response);
+
+    const result = await controller.findAllForAdmin({
+      page: 1,
+      limit: 10,
+      status: 'INACTIVE',
+    });
+
+    expect(postsService.findAllForAdmin).toHaveBeenCalledWith({
+      page: 1,
+      limit: 10,
+      status: 'INACTIVE',
+    });
+    expect(result).toBe(response);
+  });
+
+  it('updates a post status for admins', async () => {
+    const post = {
+      id: 'post-1',
+      status: 'DELETED',
+      userId: 'user-1',
+    };
+    postsService.updateStatusForAdmin.mockResolvedValue(post);
+
+    const result = await controller.updateStatusForAdmin('post-1', {
+      status: 'DELETED',
+    });
+
+    expect(postsService.updateStatusForAdmin).toHaveBeenCalledWith('post-1', {
+      status: 'DELETED',
+    });
+    expect(result).toBe(post);
   });
 
   it('updates a post with partial data for the authenticated user', async () => {
