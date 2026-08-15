@@ -1,6 +1,25 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
+export const publicUserSelect = {
+  id: true,
+  email: true,
+  firstName: true,
+  lastName: true,
+  phone: true,
+  role: true,
+  createdAt: true,
+  updatedAt: true,
+  emailVerified: true,
+  profilePhoto: true,
+  status: true,
+  city: true,
+  description: true,
+  neighborhood: true,
+  profession: true,
+  state: true,
+};
+
 @Injectable()
 export class UsersService {
   constructor(private prisma: PrismaService) {}
@@ -20,24 +39,7 @@ export class UsersService {
   }) {
     return this.prisma.user.create({
       data,
-      select: {
-        id: true,
-        email: true,
-        firstName: true,
-        lastName: true,
-        phone: true,
-        role: true,
-        createdAt: true,
-        updatedAt: true,
-        emailVerified: true,
-        profilePhoto: true,
-        status: true,
-        city: true,
-        description: true,
-        neighborhood: true,
-        profession: true,
-        state: true,
-      },
+      select: publicUserSelect,
     });
   }
 
@@ -54,24 +56,7 @@ export class UsersService {
       where: {
         id,
       },
-      select: {
-        id: true,
-        email: true,
-        firstName: true,
-        lastName: true,
-        phone: true,
-        role: true,
-        createdAt: true,
-        updatedAt: true,
-        emailVerified: true,
-        profilePhoto: true,
-        status: true,
-        city: true,
-        description: true,
-        neighborhood: true,
-        profession: true,
-        state: true,
-      },
+      select: publicUserSelect,
     });
   }
 
@@ -94,24 +79,7 @@ export class UsersService {
         id,
       },
       data,
-      select: {
-        id: true,
-        email: true,
-        firstName: true,
-        lastName: true,
-        phone: true,
-        role: true,
-        createdAt: true,
-        updatedAt: true,
-        emailVerified: true,
-        profilePhoto: true,
-        status: true,
-        city: true,
-        description: true,
-        neighborhood: true,
-        profession: true,
-        state: true,
-      },
+      select: publicUserSelect,
     });
   }
 }
