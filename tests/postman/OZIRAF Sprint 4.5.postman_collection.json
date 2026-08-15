@@ -346,7 +346,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/posts/me?page=1&limit=10&sortBy=createdAt&sortOrder=desc",
+              "raw": "{{base_url}}/posts/me?page=1&limit=10&sortBy=createdAt&sortOrder=desc&status=INACTIVE",
               "host": [
                 "{{base_url}}"
               ],
@@ -370,6 +370,10 @@
                 {
                   "key": "sortOrder",
                   "value": "desc"
+                },
+                {
+                  "key": "status",
+                  "value": "INACTIVE"
                 }
               ]
             }

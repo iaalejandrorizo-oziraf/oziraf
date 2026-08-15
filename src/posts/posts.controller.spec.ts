@@ -73,6 +73,7 @@ describe('PostsController', () => {
         limit: 10,
         sortBy: 'price',
         sortOrder: 'asc',
+        status: 'INACTIVE',
       },
     );
 
@@ -81,6 +82,7 @@ describe('PostsController', () => {
       limit: 10,
       sortBy: 'price',
       sortOrder: 'asc',
+      status: 'INACTIVE',
     });
     expect(result).toBe(response);
   });

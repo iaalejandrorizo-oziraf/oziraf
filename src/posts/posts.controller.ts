@@ -14,6 +14,7 @@ import {
 import { PostsService } from './posts.service';
 import { CreatePostDto } from './dto/create-post.dto';
 import { ListPostsQueryDto } from './dto/list-posts-query.dto';
+import { MyPostsQueryDto } from './dto/my-posts-query.dto';
 import { SearchPostsQueryDto } from './dto/search-posts-query.dto';
 import { UpdatePostStatusDto } from './dto/update-post-status.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
@@ -41,7 +42,7 @@ export class PostsController {
 
   @UseGuards(JwtAuthGuard)
   @Get('me')
-  async findMine(@Request() req, @Query() query: ListPostsQueryDto) {
+  async findMine(@Request() req, @Query() query: MyPostsQueryDto) {
     return this.postsService.findMine(req.user.userId, query);
   }
 

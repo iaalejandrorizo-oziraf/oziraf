@@ -65,14 +65,13 @@ describe('PostsService', () => {
       limit: 10,
       sortBy: 'price',
       sortOrder: 'asc',
+      status: 'INACTIVE',
     });
 
     expect(prisma.post.findMany).toHaveBeenCalledWith({
       where: {
         userId: 'user-1',
-        status: {
-          not: 'DELETED',
-        },
+        status: 'INACTIVE',
       },
       include: {
         user: {
@@ -96,9 +95,7 @@ describe('PostsService', () => {
     expect(prisma.post.count).toHaveBeenCalledWith({
       where: {
         userId: 'user-1',
-        status: {
-          not: 'DELETED',
-        },
+        status: 'INACTIVE',
       },
     });
     expect(result).toEqual({

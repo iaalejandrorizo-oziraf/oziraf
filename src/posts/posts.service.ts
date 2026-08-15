@@ -13,6 +13,7 @@ import {
 } from '../common/utils/pagination.util';
 import { CreatePostDto } from './dto/create-post.dto';
 import { ListPostsQueryDto } from './dto/list-posts-query.dto';
+import { MyPostsQueryDto } from './dto/my-posts-query.dto';
 import { SearchPostsQueryDto } from './dto/search-posts-query.dto';
 import { UpdatePostStatusDto } from './dto/update-post-status.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
@@ -75,10 +76,10 @@ export class PostsService {
   }
 
   // Obtener publicaciones del usuario autenticado
-  async findMine(userId: string, options?: ListPostsQueryDto) {
+  async findMine(userId: string, options?: MyPostsQueryDto) {
     const where: Prisma.PostWhereInput = {
       userId,
-      status: {
+      status: options?.status ?? {
         not: 'DELETED',
       },
     };
