@@ -93,3 +93,17 @@ The API uses a global validation pipe with:
 - query/body transformation enabled
 
 Current protections include trimmed text input, length limits, valid profile photo URLs, positive prices, paginated listings and public user responses without passwords.
+
+## Paginated Responses
+
+Paginated endpoints return:
+
+```json
+{
+  "data": [],
+  "page": 1,
+  "limit": 10,
+  "total": 0,
+  "totalPages": 0
+}
+```

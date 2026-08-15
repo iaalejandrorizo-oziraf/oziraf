@@ -4,7 +4,10 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 
-import { getPagination } from '../common/utils/pagination.util';
+import {
+  buildPaginatedResponse,
+  getPagination,
+} from '../common/utils/pagination.util';
 import { PrismaService } from '../prisma/prisma.service';
 import { ListFavoritesQueryDto } from './dto/list-favorites-query.dto';
 
@@ -87,31 +90,40 @@ export class FavoritesService {
   }
 
   async findAll(userId: string, options?: ListFavoritesQueryDto) {
-    return this.prisma.favorite.findMany({
-      where: {
-        userId,
-      },
-      include: {
-        post: {
-          include: {
-            user: {
-              select: {
-                id: true,
-                firstName: true,
-                lastName: true,
-                profession: true,
-                city: true,
-                state: true,
-                profilePhoto: true,
+    const where = {
+      userId,
+    };
+
+    const [favorites, total] = await Promise.all([
+      this.prisma.favorite.findMany({
+        where,
+        include: {
+          post: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  firstName: true,
+                  lastName: true,
+                  profession: true,
+                  city: true,
+                  state: true,
+                  profilePhoto: true,
+                },
               },
             },
           },
         },
-      },
-      ...getPagination(options),
-      orderBy: {
-        createdAt: 'desc',
-      },
-    });
+        ...getPagination(options),
+        orderBy: {
+          createdAt: 'desc',
+        },
+      }),
+      this.prisma.favorite.count({
+        where,
+      }),
+    ]);
+
+    return buildPaginatedResponse(favorites, total, options);
   }
 }

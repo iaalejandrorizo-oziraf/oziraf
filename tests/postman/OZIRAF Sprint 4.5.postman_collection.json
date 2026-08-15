@@ -373,12 +373,17 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('My posts list is returned', function () {",
+                  "pm.test('My posts page is returned', function () {",
                   "  pm.response.to.have.status(200);",
-                  "  pm.expect(pm.response.json()).to.be.an('array');",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.data).to.be.an('array');",
+                  "  pm.expect(json.page).to.be.a('number');",
+                  "  pm.expect(json.limit).to.be.a('number');",
+                  "  pm.expect(json.total).to.be.a('number');",
+                  "  pm.expect(json.totalPages).to.be.a('number');",
                   "});",
                   "",
-                  "const posts = pm.response.json();",
+                  "const posts = pm.response.json().data;",
                   "if (Array.isArray(posts) && posts.length > 0) {",
                   "  pm.collectionVariables.set('post_id', posts[0].id);",
                   "  pm.environment.set('post_id', posts[0].id);",
@@ -420,9 +425,14 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('Posts list is returned', function () {",
+                  "pm.test('Posts page is returned', function () {",
                   "  pm.response.to.have.status(200);",
-                  "  pm.expect(pm.response.json()).to.be.an('array');",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.data).to.be.an('array');",
+                  "  pm.expect(json.page).to.be.a('number');",
+                  "  pm.expect(json.limit).to.be.a('number');",
+                  "  pm.expect(json.total).to.be.a('number');",
+                  "  pm.expect(json.totalPages).to.be.a('number');",
                   "});"
                 ]
               }
@@ -482,9 +492,14 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('Search returns a list', function () {",
+                  "pm.test('Search page is returned', function () {",
                   "  pm.response.to.have.status(200);",
-                  "  pm.expect(pm.response.json()).to.be.an('array');",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.data).to.be.an('array');",
+                  "  pm.expect(json.page).to.be.a('number');",
+                  "  pm.expect(json.limit).to.be.a('number');",
+                  "  pm.expect(json.total).to.be.a('number');",
+                  "  pm.expect(json.totalPages).to.be.a('number');",
                   "});"
                 ]
               }
@@ -767,12 +782,17 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('Favorites list is returned', function () {",
+                  "pm.test('Favorites page is returned', function () {",
                   "  pm.response.to.have.status(200);",
-                  "  pm.expect(pm.response.json()).to.be.an('array');",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.data).to.be.an('array');",
+                  "  pm.expect(json.page).to.be.a('number');",
+                  "  pm.expect(json.limit).to.be.a('number');",
+                  "  pm.expect(json.total).to.be.a('number');",
+                  "  pm.expect(json.totalPages).to.be.a('number');",
                   "});",
                   "",
-                  "const favorites = pm.response.json();",
+                  "const favorites = pm.response.json().data;",
                   "if (Array.isArray(favorites) && favorites.length > 0) {",
                   "  pm.collectionVariables.set('favorite_id', favorites[0].id);",
                   "  pm.environment.set('favorite_id', favorites[0].id);",

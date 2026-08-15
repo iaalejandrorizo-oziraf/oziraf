@@ -7,6 +7,7 @@ describe('FavoritesService', () => {
   let service: FavoritesService;
   let prisma: {
     favorite: {
+      count: jest.Mock;
       create: jest.Mock;
       delete: jest.Mock;
       findMany: jest.Mock;
@@ -20,6 +21,7 @@ describe('FavoritesService', () => {
   beforeEach(async () => {
     prisma = {
       favorite: {
+        count: jest.fn(),
         create: jest.fn(),
         delete: jest.fn(),
         findMany: jest.fn(),
@@ -130,6 +132,7 @@ describe('FavoritesService', () => {
 
   it('finds favorites with default pagination', async () => {
     prisma.favorite.findMany.mockResolvedValue([]);
+    prisma.favorite.count.mockResolvedValue(0);
 
     const result = await service.findAll('user-id');
 
@@ -160,6 +163,17 @@ describe('FavoritesService', () => {
         createdAt: 'desc',
       },
     });
-    expect(result).toEqual([]);
+    expect(prisma.favorite.count).toHaveBeenCalledWith({
+      where: {
+        userId: 'user-id',
+      },
+    });
+    expect(result).toEqual({
+      data: [],
+      page: 1,
+      limit: 20,
+      total: 0,
+      totalPages: 0,
+    });
   });
 });

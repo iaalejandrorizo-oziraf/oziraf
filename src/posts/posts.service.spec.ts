@@ -7,6 +7,7 @@ describe('PostsService', () => {
   let service: PostsService;
   let prisma: {
     post: {
+      count: jest.Mock;
       create: jest.Mock;
       findMany: jest.Mock;
       findUnique: jest.Mock;
@@ -18,6 +19,7 @@ describe('PostsService', () => {
   beforeEach(async () => {
     prisma = {
       post: {
+        count: jest.fn(),
         create: jest.fn(),
         findMany: jest.fn(),
         findUnique: jest.fn(),
@@ -52,6 +54,7 @@ describe('PostsService', () => {
       },
     ];
     prisma.post.findMany.mockResolvedValue(posts);
+    prisma.post.count.mockResolvedValue(21);
 
     const result = await service.findMine('user-1', {
       page: 2,
@@ -81,15 +84,28 @@ describe('PostsService', () => {
         createdAt: 'desc',
       },
     });
-    expect(result).toBe(posts);
+    expect(prisma.post.count).toHaveBeenCalledWith({
+      where: {
+        userId: 'user-1',
+      },
+    });
+    expect(result).toEqual({
+      data: posts,
+      page: 2,
+      limit: 10,
+      total: 21,
+      totalPages: 3,
+    });
   });
 
   it('finds all posts with default pagination', async () => {
     prisma.post.findMany.mockResolvedValue([]);
+    prisma.post.count.mockResolvedValue(0);
 
     const result = await service.findAll();
 
     expect(prisma.post.findMany).toHaveBeenCalledWith({
+      where: {},
       include: {
         user: {
           select: {
@@ -109,7 +125,52 @@ describe('PostsService', () => {
         createdAt: 'desc',
       },
     });
-    expect(result).toEqual([]);
+    expect(prisma.post.count).toHaveBeenCalledWith({
+      where: {},
+    });
+    expect(result).toEqual({
+      data: [],
+      page: 1,
+      limit: 20,
+      total: 0,
+      totalPages: 0,
+    });
+  });
+
+  it('searches posts with filters and pagination metadata', async () => {
+    const posts = [
+      {
+        id: 'post-1',
+        title: 'Servicio de arquitectura',
+        userId: 'user-1',
+      },
+    ];
+    prisma.post.findMany.mockResolvedValue(posts);
+    prisma.post.count.mockResolvedValue(1);
+
+    const result = await service.search({
+      q: 'arquitectura',
+      city: 'Guadalajara',
+      page: 1,
+      limit: 10,
+    });
+
+    expect(prisma.post.count).toHaveBeenCalledWith({
+      where: expect.objectContaining({
+        status: 'ACTIVE',
+        city: {
+          contains: 'Guadalajara',
+          mode: 'insensitive',
+        },
+      }),
+    });
+    expect(result).toEqual({
+      data: posts,
+      page: 1,
+      limit: 10,
+      total: 1,
+      totalPages: 1,
+    });
   });
 
   it('finds one post by id', async () => {

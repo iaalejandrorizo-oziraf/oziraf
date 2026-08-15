@@ -3,9 +3,13 @@ import {
   ForbiddenException,
   NotFoundException,
 } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 
 import { PrismaService } from '../prisma/prisma.service';
-import { getPagination } from '../common/utils/pagination.util';
+import {
+  buildPaginatedResponse,
+  getPagination,
+} from '../common/utils/pagination.util';
 import { CreatePostDto } from './dto/create-post.dto';
 import { ListPostsQueryDto } from './dto/list-posts-query.dto';
 import { SearchPostsQueryDto } from './dto/search-posts-query.dto';
@@ -41,27 +45,44 @@ export class PostsService {
 
   // Obtener todas las publicaciones
   async findAll(options?: ListPostsQueryDto) {
-    return this.prisma.post.findMany({
-      include: postUserInclude,
-      ...getPagination(options),
-      orderBy: {
-        createdAt: 'desc',
-      },
-    });
+    const where: Prisma.PostWhereInput = {};
+    const [posts, total] = await Promise.all([
+      this.prisma.post.findMany({
+        where,
+        include: postUserInclude,
+        ...getPagination(options),
+        orderBy: {
+          createdAt: 'desc',
+        },
+      }),
+      this.prisma.post.count({
+        where,
+      }),
+    ]);
+
+    return buildPaginatedResponse(posts, total, options);
   }
 
   // Obtener publicaciones del usuario autenticado
   async findMine(userId: string, options?: ListPostsQueryDto) {
-    return this.prisma.post.findMany({
-      where: {
-        userId,
-      },
-      include: postUserInclude,
-      ...getPagination(options),
-      orderBy: {
-        createdAt: 'desc',
-      },
-    });
+    const where: Prisma.PostWhereInput = {
+      userId,
+    };
+    const [posts, total] = await Promise.all([
+      this.prisma.post.findMany({
+        where,
+        include: postUserInclude,
+        ...getPagination(options),
+        orderBy: {
+          createdAt: 'desc',
+        },
+      }),
+      this.prisma.post.count({
+        where,
+      }),
+    ]);
+
+    return buildPaginatedResponse(posts, total, options);
   }
 
   // Obtener una publicación por ID
@@ -133,63 +154,69 @@ export class PostsService {
   async search(filters: SearchPostsQueryDto) {
     const { q, category, country, state, city } = filters;
 
-    return this.prisma.post.findMany({
-      where: {
-        status: 'ACTIVE',
+    const where: Prisma.PostWhereInput = {
+      status: 'ACTIVE',
 
-        ...(category && {
-          category: {
-            contains: category,
-            mode: 'insensitive',
-          },
-        }),
+      ...(category && {
+        category: {
+          contains: category,
+          mode: 'insensitive',
+        },
+      }),
 
-        ...(country && {
-          country: {
-            contains: country,
-            mode: 'insensitive',
-          },
-        }),
+      ...(country && {
+        country: {
+          contains: country,
+          mode: 'insensitive',
+        },
+      }),
 
-        ...(state && {
-          state: {
-            contains: state,
-            mode: 'insensitive',
-          },
-        }),
+      ...(state && {
+        state: {
+          contains: state,
+          mode: 'insensitive',
+        },
+      }),
 
-        ...(city && {
-          city: {
-            contains: city,
-            mode: 'insensitive',
-          },
-        }),
+      ...(city && {
+        city: {
+          contains: city,
+          mode: 'insensitive',
+        },
+      }),
 
-        ...(q && {
-          OR: [
-            {
-              title: {
-                contains: q,
-                mode: 'insensitive',
-              },
+      ...(q && {
+        OR: [
+          {
+            title: {
+              contains: q,
+              mode: 'insensitive',
             },
-            {
-              description: {
-                contains: q,
-                mode: 'insensitive',
-              },
+          },
+          {
+            description: {
+              contains: q,
+              mode: 'insensitive',
             },
-          ],
-        }),
-      },
+          },
+        ],
+      }),
+    };
 
-      include: postUserInclude,
+    const [posts, total] = await Promise.all([
+      this.prisma.post.findMany({
+        where,
+        include: postUserInclude,
+        ...getPagination(filters),
+        orderBy: {
+          createdAt: 'desc',
+        },
+      }),
+      this.prisma.post.count({
+        where,
+      }),
+    ]);
 
-      ...getPagination(filters),
-
-      orderBy: {
-        createdAt: 'desc',
-      },
-    });
+    return buildPaginatedResponse(posts, total, filters);
   }
 }

@@ -43,14 +43,20 @@ describe('PostsController', () => {
   });
 
   it('returns posts for the authenticated user', async () => {
-    const posts = [
-      {
-        id: 'post-1',
-        title: 'Servicio de arquitectura',
-        userId: 'user-1',
-      },
-    ];
-    postsService.findMine.mockResolvedValue(posts);
+    const response = {
+      data: [
+        {
+          id: 'post-1',
+          title: 'Servicio de arquitectura',
+          userId: 'user-1',
+        },
+      ],
+      page: 2,
+      limit: 10,
+      total: 1,
+      totalPages: 1,
+    };
+    postsService.findMine.mockResolvedValue(response);
 
     const result = await controller.findMine(
       {
@@ -68,11 +74,18 @@ describe('PostsController', () => {
       page: 2,
       limit: 10,
     });
-    expect(result).toBe(posts);
+    expect(result).toBe(response);
   });
 
   it('passes pagination options to the posts list', async () => {
-    postsService.findAll.mockResolvedValue([]);
+    const response = {
+      data: [],
+      page: 2,
+      limit: 10,
+      total: 0,
+      totalPages: 0,
+    };
+    postsService.findAll.mockResolvedValue(response);
 
     const result = await controller.findAll({
       page: 2,
@@ -83,11 +96,18 @@ describe('PostsController', () => {
       page: 2,
       limit: 10,
     });
-    expect(result).toEqual([]);
+    expect(result).toBe(response);
   });
 
   it('passes search filters and pagination options to the service', async () => {
-    postsService.search.mockResolvedValue([]);
+    const response = {
+      data: [],
+      page: 2,
+      limit: 10,
+      total: 0,
+      totalPages: 0,
+    };
+    postsService.search.mockResolvedValue(response);
 
     const result = await controller.search({
       q: 'arquitectura',
@@ -102,7 +122,7 @@ describe('PostsController', () => {
       page: 2,
       limit: 10,
     });
-    expect(result).toEqual([]);
+    expect(result).toBe(response);
   });
 
   it('updates a post with partial data for the authenticated user', async () => {
