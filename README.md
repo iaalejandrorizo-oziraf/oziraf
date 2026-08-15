@@ -21,7 +21,7 @@ OZIRAF_ADMIN_EMAIL="admin@example.com"
 OZIRAF_ADMIN_PASSWORD="change-this-password"
 ```
 
-The API applies a broad global rate limit and stricter limits to sensitive auth actions such as login, registration, password reset and email verification.
+The API applies security headers, a broad global rate limit and stricter limits to sensitive auth actions such as login, registration, password reset and email verification.
 
 ## Setup
 
