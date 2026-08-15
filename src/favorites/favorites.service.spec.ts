@@ -157,6 +157,9 @@ describe('FavoritesService', () => {
     expect(prisma.favorite.findMany).toHaveBeenCalledWith({
       where: {
         userId: 'user-id',
+        post: {
+          status: 'ACTIVE',
+        },
       },
       include: {
         post: {
@@ -184,6 +187,9 @@ describe('FavoritesService', () => {
     expect(prisma.favorite.count).toHaveBeenCalledWith({
       where: {
         userId: 'user-id',
+        post: {
+          status: 'ACTIVE',
+        },
       },
     });
     expect(result).toEqual({

@@ -98,6 +98,9 @@ export class FavoritesService {
   async findAll(userId: string, options?: ListFavoritesQueryDto) {
     const where = {
       userId,
+      post: {
+        status: 'ACTIVE',
+      },
     };
 
     const [favorites, total] = await Promise.all([
