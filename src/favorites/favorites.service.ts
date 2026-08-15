@@ -4,18 +4,9 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 
+import { getPagination } from '../common/utils/pagination.util';
 import { PrismaService } from '../prisma/prisma.service';
 import { ListFavoritesQueryDto } from './dto/list-favorites-query.dto';
-
-function getPagination(options: ListFavoritesQueryDto = {}) {
-  const page = Math.max(options.page ?? 1, 1);
-  const limit = Math.min(Math.max(options.limit ?? 20, 1), 50);
-
-  return {
-    skip: (page - 1) * limit,
-    take: limit,
-  };
-}
 
 @Injectable()
 export class FavoritesService {

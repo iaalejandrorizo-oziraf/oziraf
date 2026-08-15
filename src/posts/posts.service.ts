@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 
 import { PrismaService } from '../prisma/prisma.service';
+import { getPagination } from '../common/utils/pagination.util';
 import { CreatePostDto } from './dto/create-post.dto';
 import { ListPostsQueryDto } from './dto/list-posts-query.dto';
 import { SearchPostsQueryDto } from './dto/search-posts-query.dto';
@@ -23,16 +24,6 @@ const postUserInclude = {
     },
   },
 };
-
-function getPagination(options: ListPostsQueryDto = {}) {
-  const page = Math.max(options.page ?? 1, 1);
-  const limit = Math.min(Math.max(options.limit ?? 20, 1), 50);
-
-  return {
-    skip: (page - 1) * limit,
-    take: limit,
-  };
-}
 
 @Injectable()
 export class PostsService {
