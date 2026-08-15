@@ -52,14 +52,57 @@ describe('PostsController', () => {
     ];
     postsService.findMine.mockResolvedValue(posts);
 
-    const result = await controller.findMine({
-      user: {
-        userId: 'user-1',
+    const result = await controller.findMine(
+      {
+        user: {
+          userId: 'user-1',
+        },
       },
+      {
+        page: 2,
+        limit: 10,
+      },
+    );
+
+    expect(postsService.findMine).toHaveBeenCalledWith('user-1', {
+      page: 2,
+      limit: 10,
+    });
+    expect(result).toBe(posts);
+  });
+
+  it('passes pagination options to the posts list', async () => {
+    postsService.findAll.mockResolvedValue([]);
+
+    const result = await controller.findAll({
+      page: 2,
+      limit: 10,
     });
 
-    expect(postsService.findMine).toHaveBeenCalledWith('user-1');
-    expect(result).toBe(posts);
+    expect(postsService.findAll).toHaveBeenCalledWith({
+      page: 2,
+      limit: 10,
+    });
+    expect(result).toEqual([]);
+  });
+
+  it('passes search filters and pagination options to the service', async () => {
+    postsService.search.mockResolvedValue([]);
+
+    const result = await controller.search({
+      q: 'arquitectura',
+      city: 'Guadalajara',
+      page: 2,
+      limit: 10,
+    });
+
+    expect(postsService.search).toHaveBeenCalledWith({
+      q: 'arquitectura',
+      city: 'Guadalajara',
+      page: 2,
+      limit: 10,
+    });
+    expect(result).toEqual([]);
   });
 
   it('updates a post with partial data for the authenticated user', async () => {

@@ -6,6 +6,8 @@ import {
 
 import { PrismaService } from '../prisma/prisma.service';
 import { CreatePostDto } from './dto/create-post.dto';
+import { ListPostsQueryDto } from './dto/list-posts-query.dto';
+import { SearchPostsQueryDto } from './dto/search-posts-query.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
 
 const postUserInclude = {
@@ -22,6 +24,16 @@ const postUserInclude = {
   },
 };
 
+function getPagination(options: ListPostsQueryDto = {}) {
+  const page = Math.max(options.page ?? 1, 1);
+  const limit = Math.min(Math.max(options.limit ?? 20, 1), 50);
+
+  return {
+    skip: (page - 1) * limit,
+    take: limit,
+  };
+}
+
 @Injectable()
 export class PostsService {
   constructor(private prisma: PrismaService) {}
@@ -37,9 +49,10 @@ export class PostsService {
   }
 
   // Obtener todas las publicaciones
-  async findAll() {
+  async findAll(options?: ListPostsQueryDto) {
     return this.prisma.post.findMany({
       include: postUserInclude,
+      ...getPagination(options),
       orderBy: {
         createdAt: 'desc',
       },
@@ -47,12 +60,13 @@ export class PostsService {
   }
 
   // Obtener publicaciones del usuario autenticado
-  async findMine(userId: string) {
+  async findMine(userId: string, options?: ListPostsQueryDto) {
     return this.prisma.post.findMany({
       where: {
         userId,
       },
       include: postUserInclude,
+      ...getPagination(options),
       orderBy: {
         createdAt: 'desc',
       },
@@ -119,13 +133,7 @@ export class PostsService {
       },
     });
   }
-  async search(filters: {
-    q?: string;
-    category?: string;
-    country?: string;
-    state?: string;
-    city?: string;
-  }) {
+  async search(filters: SearchPostsQueryDto) {
     const { q, category, country, state, city } = filters;
 
     return this.prisma.post.findMany({
@@ -179,6 +187,8 @@ export class PostsService {
       },
 
       include: postUserInclude,
+
+      ...getPagination(filters),
 
       orderBy: {
         createdAt: 'desc',

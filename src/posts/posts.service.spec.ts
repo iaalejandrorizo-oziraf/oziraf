@@ -53,7 +53,10 @@ describe('PostsService', () => {
     ];
     prisma.post.findMany.mockResolvedValue(posts);
 
-    const result = await service.findMine('user-1');
+    const result = await service.findMine('user-1', {
+      page: 2,
+      limit: 10,
+    });
 
     expect(prisma.post.findMany).toHaveBeenCalledWith({
       where: {
@@ -72,11 +75,41 @@ describe('PostsService', () => {
           },
         },
       },
+      skip: 10,
+      take: 10,
       orderBy: {
         createdAt: 'desc',
       },
     });
     expect(result).toBe(posts);
+  });
+
+  it('finds all posts with default pagination', async () => {
+    prisma.post.findMany.mockResolvedValue([]);
+
+    const result = await service.findAll();
+
+    expect(prisma.post.findMany).toHaveBeenCalledWith({
+      include: {
+        user: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            profession: true,
+            city: true,
+            state: true,
+            profilePhoto: true,
+          },
+        },
+      },
+      skip: 0,
+      take: 20,
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+    expect(result).toEqual([]);
   });
 
   it('updates a post when it belongs to the user', async () => {

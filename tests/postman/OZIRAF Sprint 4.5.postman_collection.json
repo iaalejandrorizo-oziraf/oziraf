@@ -346,13 +346,23 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/posts/me",
+              "raw": "{{base_url}}/posts/me?page=1&limit=10",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "posts",
                 "me"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
               ]
             }
           },
@@ -384,12 +394,22 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/posts",
+              "raw": "{{base_url}}/posts?page=1&limit=10",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "posts"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
               ]
             }
           },
@@ -415,7 +435,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/posts/search?q=arquitectura&category=Arquitectura&country=México&state=Jalisco&city=Guadalajara",
+              "raw": "{{base_url}}/posts/search?q=arquitectura&category=Arquitectura&country=México&state=Jalisco&city=Guadalajara&page=1&limit=10",
               "host": [
                 "{{base_url}}"
               ],
@@ -443,6 +463,14 @@
                 {
                   "key": "city",
                   "value": "Guadalajara"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
                 }
               ]
             }

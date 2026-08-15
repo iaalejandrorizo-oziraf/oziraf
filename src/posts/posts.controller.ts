@@ -13,6 +13,8 @@ import {
 
 import { PostsService } from './posts.service';
 import { CreatePostDto } from './dto/create-post.dto';
+import { ListPostsQueryDto } from './dto/list-posts-query.dto';
+import { SearchPostsQueryDto } from './dto/search-posts-query.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
@@ -27,31 +29,19 @@ export class PostsController {
   }
 
   @Get()
-  async findAll() {
-    return this.postsService.findAll();
+  async findAll(@Query() query: ListPostsQueryDto) {
+    return this.postsService.findAll(query);
   }
 
   @Get('search')
-  async search(
-    @Query('q') q?: string,
-    @Query('category') category?: string,
-    @Query('country') country?: string,
-    @Query('state') state?: string,
-    @Query('city') city?: string,
-  ) {
-    return this.postsService.search({
-      q,
-      category,
-      country,
-      state,
-      city,
-    });
+  async search(@Query() query: SearchPostsQueryDto) {
+    return this.postsService.search(query);
   }
 
   @UseGuards(JwtAuthGuard)
   @Get('me')
-  async findMine(@Request() req) {
-    return this.postsService.findMine(req.user.userId);
+  async findMine(@Request() req, @Query() query: ListPostsQueryDto) {
+    return this.postsService.findMine(req.user.userId, query);
   }
 
   @Get(':id')
