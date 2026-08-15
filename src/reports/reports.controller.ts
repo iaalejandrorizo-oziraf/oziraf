@@ -3,12 +3,17 @@ import {
   Controller,
   Get,
   Param,
+  Patch,
   Post,
+  Query,
   Request,
   UseGuards,
 } from '@nestjs/common';
+import { AdminGuard } from '../auth/guards/admin.guard';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CreatePostReportDto } from './dto/create-post-report.dto';
+import { ListReportsQueryDto } from './dto/list-reports-query.dto';
+import { UpdateReportStatusDto } from './dto/update-report-status.dto';
 import { ReportsService } from './reports.service';
 
 @UseGuards(JwtAuthGuard)
@@ -32,5 +37,20 @@ export class ReportsController {
   @Get('me')
   async findMine(@Request() req) {
     return this.reportsService.findMine(req.user.userId);
+  }
+
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  @Get('admin')
+  async findAll(@Query() query: ListReportsQueryDto) {
+    return this.reportsService.findAll(query);
+  }
+
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  @Patch('admin/:id/status')
+  async updateStatus(
+    @Param('id') id: string,
+    @Body() updateReportStatusDto: UpdateReportStatusDto,
+  ) {
+    return this.reportsService.updateStatus(id, updateReportStatusDto);
   }
 }

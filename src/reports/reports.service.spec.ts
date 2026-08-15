@@ -10,9 +10,11 @@ describe('ReportsService', () => {
       findUnique: jest.Mock;
     };
     postReport: {
+      count: jest.Mock;
       create: jest.Mock;
       findMany: jest.Mock;
       findUnique: jest.Mock;
+      update: jest.Mock;
     };
   };
 
@@ -22,9 +24,11 @@ describe('ReportsService', () => {
         findUnique: jest.fn(),
       },
       postReport: {
+        count: jest.fn(),
         create: jest.fn(),
         findMany: jest.fn(),
         findUnique: jest.fn(),
+        update: jest.fn(),
       },
     };
 
@@ -145,5 +149,79 @@ describe('ReportsService', () => {
       },
     });
     expect(result).toBe(reports);
+  });
+
+  it('finds all reports with pagination for admins', async () => {
+    const reports = [
+      {
+        id: 'report-id',
+        status: 'OPEN',
+      },
+    ];
+    prisma.postReport.findMany.mockResolvedValue(reports);
+    prisma.postReport.count.mockResolvedValue(1);
+
+    const result = await service.findAll({
+      page: 1,
+      limit: 10,
+      status: 'OPEN',
+    });
+
+    expect(prisma.postReport.findMany).toHaveBeenCalledWith({
+      where: {
+        status: 'OPEN',
+      },
+      include: expect.any(Object),
+      skip: 0,
+      take: 10,
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+    expect(result).toEqual({
+      data: reports,
+      page: 1,
+      limit: 10,
+      total: 1,
+      totalPages: 1,
+    });
+  });
+
+  it('updates report status', async () => {
+    const report = {
+      id: 'report-id',
+      status: 'OPEN',
+    };
+    const updatedReport = {
+      ...report,
+      status: 'RESOLVED',
+    };
+    prisma.postReport.findUnique.mockResolvedValue(report);
+    prisma.postReport.update.mockResolvedValue(updatedReport);
+
+    const result = await service.updateStatus('report-id', {
+      status: 'RESOLVED',
+    });
+
+    expect(prisma.postReport.update).toHaveBeenCalledWith({
+      where: {
+        id: 'report-id',
+      },
+      data: {
+        status: 'RESOLVED',
+      },
+      include: expect.any(Object),
+    });
+    expect(result).toBe(updatedReport);
+  });
+
+  it('rejects updating missing reports', async () => {
+    prisma.postReport.findUnique.mockResolvedValue(null);
+
+    await expect(
+      service.updateStatus('report-id', {
+        status: 'RESOLVED',
+      }),
+    ).rejects.toBeInstanceOf(NotFoundException);
   });
 });

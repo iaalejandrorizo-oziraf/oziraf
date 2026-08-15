@@ -81,6 +81,8 @@ npm run start:dev
 
 - `POST /reports/posts/:postId`
 - `GET /reports/me`
+- `GET /reports/admin?page=1&limit=10&status=OPEN`
+- `PATCH /reports/admin/:id/status`
 
 ## Postman
 

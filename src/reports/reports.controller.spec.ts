@@ -5,14 +5,18 @@ import { ReportsService } from './reports.service';
 describe('ReportsController', () => {
   let controller: ReportsController;
   let reportsService: {
+    findAll: jest.Mock;
     findMine: jest.Mock;
     reportPost: jest.Mock;
+    updateStatus: jest.Mock;
   };
 
   beforeEach(async () => {
     reportsService = {
+      findAll: jest.fn(),
       findMine: jest.fn(),
       reportPost: jest.fn(),
+      updateStatus: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -79,5 +83,46 @@ describe('ReportsController', () => {
 
     expect(reportsService.findMine).toHaveBeenCalledWith('reporter-id');
     expect(result).toBe(reports);
+  });
+
+  it('returns paginated reports for admins', async () => {
+    const response = {
+      data: [],
+      page: 1,
+      limit: 10,
+      total: 0,
+      totalPages: 0,
+    };
+    reportsService.findAll.mockResolvedValue(response);
+
+    const result = await controller.findAll({
+      page: 1,
+      limit: 10,
+      status: 'OPEN',
+    });
+
+    expect(reportsService.findAll).toHaveBeenCalledWith({
+      page: 1,
+      limit: 10,
+      status: 'OPEN',
+    });
+    expect(result).toBe(response);
+  });
+
+  it('updates report status for admins', async () => {
+    const report = {
+      id: 'report-id',
+      status: 'RESOLVED',
+    };
+    reportsService.updateStatus.mockResolvedValue(report);
+
+    const result = await controller.updateStatus('report-id', {
+      status: 'RESOLVED',
+    });
+
+    expect(reportsService.updateStatus).toHaveBeenCalledWith('report-id', {
+      status: 'RESOLVED',
+    });
+    expect(result).toBe(report);
   });
 });
