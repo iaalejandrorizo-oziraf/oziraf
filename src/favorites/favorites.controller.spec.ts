@@ -4,18 +4,27 @@ import { FavoritesService } from './favorites.service';
 
 describe('FavoritesController', () => {
   let controller: FavoritesController;
+  let favoritesService: {
+    create: jest.Mock;
+    remove: jest.Mock;
+    findAll: jest.Mock;
+    isFavorite: jest.Mock;
+  };
 
   beforeEach(async () => {
+    favoritesService = {
+      create: jest.fn(),
+      remove: jest.fn(),
+      findAll: jest.fn(),
+      isFavorite: jest.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       controllers: [FavoritesController],
       providers: [
         {
           provide: FavoritesService,
-          useValue: {
-            create: jest.fn(),
-            remove: jest.fn(),
-            findAll: jest.fn(),
-          },
+          useValue: favoritesService,
         },
       ],
     }).compile();
@@ -25,5 +34,30 @@ describe('FavoritesController', () => {
 
   it('should be defined', () => {
     expect(controller).toBeDefined();
+  });
+
+  it('returns favorite status for a post', async () => {
+    favoritesService.isFavorite.mockResolvedValue({
+      isFavorite: true,
+    });
+
+    const result = await controller.status(
+      {
+        user: {
+          userId: 'user-id',
+        },
+      },
+      {
+        postId: 'post-id',
+      },
+    );
+
+    expect(favoritesService.isFavorite).toHaveBeenCalledWith(
+      'user-id',
+      'post-id',
+    );
+    expect(result).toEqual({
+      isFavorite: true,
+    });
   });
 });

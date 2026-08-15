@@ -27,6 +27,11 @@ export class FavoritesController {
     return this.favoritesService.remove(req.user.userId, params.postId);
   }
 
+  @Get(':postId/status')
+  async status(@Request() req, @Param() params: FavoriteParamDto) {
+    return this.favoritesService.isFavorite(req.user.userId, params.postId);
+  }
+
   @Get()
   async findAll(@Request() req) {
     return this.favoritesService.findAll(req.user.userId);

@@ -682,6 +682,50 @@
           ]
         },
         {
+          "name": "Status",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/favorites/{{post_id}}/status",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "favorites",
+                "{{post_id}}",
+                "status"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Favorite status is returned', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json()).to.have.property('isFavorite');",
+                  "  pm.expect(pm.response.json().isFavorite).to.be.a('boolean');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
           "name": "List",
           "request": {
             "auth": {

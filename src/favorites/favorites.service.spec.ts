@@ -107,4 +107,24 @@ describe('FavoritesService', () => {
       NotFoundException,
     );
   });
+
+  it('returns true when a post is already a favorite', async () => {
+    prisma.favorite.findUnique.mockResolvedValue({
+      id: 'favorite-id',
+      userId: 'user-id',
+      postId: 'post-id',
+    });
+
+    await expect(service.isFavorite('user-id', 'post-id')).resolves.toEqual({
+      isFavorite: true,
+    });
+  });
+
+  it('returns false when a post is not a favorite', async () => {
+    prisma.favorite.findUnique.mockResolvedValue(null);
+
+    await expect(service.isFavorite('user-id', 'post-id')).resolves.toEqual({
+      isFavorite: false,
+    });
+  });
 });

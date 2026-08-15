@@ -69,6 +69,21 @@ export class FavoritesService {
     });
   }
 
+  async isFavorite(userId: string, postId: string) {
+    const favorite = await this.prisma.favorite.findUnique({
+      where: {
+        userId_postId: {
+          userId,
+          postId,
+        },
+      },
+    });
+
+    return {
+      isFavorite: Boolean(favorite),
+    };
+  }
+
   async findAll(userId: string) {
     return this.prisma.favorite.findMany({
       where: {
