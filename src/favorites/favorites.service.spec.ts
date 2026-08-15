@@ -56,7 +56,10 @@ describe('FavoritesService', () => {
       postId: 'post-id',
     };
 
-    prisma.post.findUnique.mockResolvedValue({ id: 'post-id' });
+    prisma.post.findUnique.mockResolvedValue({
+      id: 'post-id',
+      userId: 'owner-id',
+    });
     prisma.favorite.findUnique.mockResolvedValue(null);
     prisma.favorite.create.mockResolvedValue(favorite);
 
@@ -81,12 +84,27 @@ describe('FavoritesService', () => {
   });
 
   it('rejects duplicate favorites', async () => {
-    prisma.post.findUnique.mockResolvedValue({ id: 'post-id' });
+    prisma.post.findUnique.mockResolvedValue({
+      id: 'post-id',
+      userId: 'owner-id',
+    });
     prisma.favorite.findUnique.mockResolvedValue({ id: 'favorite-id' });
 
     await expect(service.create('user-id', 'post-id')).rejects.toBeInstanceOf(
       ConflictException,
     );
+  });
+
+  it('rejects creating a favorite for the user own post', async () => {
+    prisma.post.findUnique.mockResolvedValue({
+      id: 'post-id',
+      userId: 'user-id',
+    });
+
+    await expect(service.create('user-id', 'post-id')).rejects.toBeInstanceOf(
+      ConflictException,
+    );
+    expect(prisma.favorite.findUnique).not.toHaveBeenCalled();
   });
 
   it('removes an existing favorite', async () => {

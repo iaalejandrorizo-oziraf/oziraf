@@ -111,7 +111,9 @@ describe('PostsService', () => {
     const result = await service.findAll();
 
     expect(prisma.post.findMany).toHaveBeenCalledWith({
-      where: {},
+      where: {
+        status: 'ACTIVE',
+      },
       include: {
         user: {
           select: {
@@ -132,7 +134,9 @@ describe('PostsService', () => {
       },
     });
     expect(prisma.post.count).toHaveBeenCalledWith({
-      where: {},
+      where: {
+        status: 'ACTIVE',
+      },
     });
     expect(result).toEqual({
       data: [],

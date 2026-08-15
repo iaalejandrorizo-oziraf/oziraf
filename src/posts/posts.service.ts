@@ -55,7 +55,9 @@ export class PostsService {
 
   // Obtener todas las publicaciones
   async findAll(options?: ListPostsQueryDto) {
-    const where: Prisma.PostWhereInput = {};
+    const where: Prisma.PostWhereInput = {
+      status: 'ACTIVE',
+    };
     const [posts, total] = await Promise.all([
       this.prisma.post.findMany({
         where,

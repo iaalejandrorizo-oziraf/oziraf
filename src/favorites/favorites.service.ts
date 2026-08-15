@@ -26,6 +26,12 @@ export class FavoritesService {
       throw new NotFoundException('La publicación no existe');
     }
 
+    if (post.userId === userId) {
+      throw new ConflictException(
+        'No puedes guardar tu propia publicación en favoritos',
+      );
+    }
+
     const favorite = await this.prisma.favorite.findUnique({
       where: {
         userId_postId: {

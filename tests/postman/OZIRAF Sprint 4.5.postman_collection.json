@@ -746,8 +746,8 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('Favorite is created', function () {",
-                  "  pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+                  "pm.test('Favorite create request is handled', function () {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([200, 201, 409]);",
                   "});",
                   "",
                   "const json = pm.response.json();",
