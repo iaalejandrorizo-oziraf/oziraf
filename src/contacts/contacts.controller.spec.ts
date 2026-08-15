@@ -7,12 +7,14 @@ describe('ContactsController', () => {
   let contactsService: {
     create: jest.Mock;
     findReceived: jest.Mock;
+    updateStatus: jest.Mock;
   };
 
   beforeEach(async () => {
     contactsService = {
       create: jest.fn(),
       findReceived: jest.fn(),
+      updateStatus: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -75,5 +77,35 @@ describe('ContactsController', () => {
 
     expect(contactsService.findReceived).toHaveBeenCalledWith('owner-id');
     expect(result).toBe(leads);
+  });
+
+  it('updates a received lead status for the authenticated user', async () => {
+    const lead = {
+      id: 'lead-id',
+      ownerId: 'owner-id',
+      status: 'READ',
+    };
+    contactsService.updateStatus.mockResolvedValue(lead);
+
+    const result = await controller.updateStatus(
+      'lead-id',
+      {
+        user: {
+          userId: 'owner-id',
+        },
+      },
+      {
+        status: 'READ',
+      },
+    );
+
+    expect(contactsService.updateStatus).toHaveBeenCalledWith(
+      'lead-id',
+      'owner-id',
+      {
+        status: 'READ',
+      },
+    );
+    expect(result).toBe(lead);
   });
 });

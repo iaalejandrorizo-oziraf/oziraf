@@ -1120,6 +1120,58 @@
               }
             }
           ]
+        },
+        {
+          "name": "Update lead status",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"READ\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/contacts/leads/{{lead_id}}/status",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "contacts",
+                "leads",
+                "{{lead_id}}",
+                "status"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Lead status update is handled', function () {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([200, 404]);",
+                  "});"
+                ]
+              }
+            }
+          ]
         }
       ]
     }

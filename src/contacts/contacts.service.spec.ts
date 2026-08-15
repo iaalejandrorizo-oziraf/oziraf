@@ -1,4 +1,8 @@
-import { ConflictException, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  ForbiddenException,
+  NotFoundException,
+} from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { PrismaService } from '../prisma/prisma.service';
 import { ContactsService } from './contacts.service';
@@ -9,6 +13,8 @@ describe('ContactsService', () => {
     contactLead: {
       create: jest.Mock;
       findMany: jest.Mock;
+      findUnique: jest.Mock;
+      update: jest.Mock;
     };
     post: {
       findUnique: jest.Mock;
@@ -20,6 +26,8 @@ describe('ContactsService', () => {
       contactLead: {
         create: jest.fn(),
         findMany: jest.fn(),
+        findUnique: jest.fn(),
+        update: jest.fn(),
       },
       post: {
         findUnique: jest.fn(),
@@ -123,5 +131,57 @@ describe('ContactsService', () => {
       },
     });
     expect(result).toBe(leads);
+  });
+
+  it('updates a received lead status for the owner', async () => {
+    const lead = {
+      id: 'lead-id',
+      ownerId: 'owner-id',
+      status: 'NEW',
+    };
+    const updatedLead = {
+      ...lead,
+      status: 'READ',
+    };
+    prisma.contactLead.findUnique.mockResolvedValue(lead);
+    prisma.contactLead.update.mockResolvedValue(updatedLead);
+
+    const result = await service.updateStatus('lead-id', 'owner-id', {
+      status: 'READ',
+    });
+
+    expect(prisma.contactLead.update).toHaveBeenCalledWith({
+      where: {
+        id: 'lead-id',
+      },
+      data: {
+        status: 'READ',
+      },
+      include: expect.any(Object),
+    });
+    expect(result).toBe(updatedLead);
+  });
+
+  it('rejects updating a missing lead status', async () => {
+    prisma.contactLead.findUnique.mockResolvedValue(null);
+
+    await expect(
+      service.updateStatus('lead-id', 'owner-id', {
+        status: 'READ',
+      }),
+    ).rejects.toBeInstanceOf(NotFoundException);
+  });
+
+  it('rejects updating another owner lead status', async () => {
+    prisma.contactLead.findUnique.mockResolvedValue({
+      id: 'lead-id',
+      ownerId: 'owner-id',
+    });
+
+    await expect(
+      service.updateStatus('lead-id', 'other-owner-id', {
+        status: 'READ',
+      }),
+    ).rejects.toBeInstanceOf(ForbiddenException);
   });
 });

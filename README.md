@@ -74,6 +74,7 @@ npm run start:dev
 
 - `POST /contacts/posts/:postId`
 - `GET /contacts/leads`
+- `PATCH /contacts/leads/:id/status`
 
 ## Postman
 
