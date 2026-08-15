@@ -6,6 +6,7 @@ export function setupApp(app: INestApplication) {
   const configService = app.get(ConfigService);
   const corsOrigin = configService.get<string>('CORS_ORIGIN');
 
+  app.enableShutdownHooks();
   app.use(helmet());
 
   app.enableCors({
