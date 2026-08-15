@@ -6,6 +6,7 @@ import {
 
 import { PrismaService } from '../prisma/prisma.service';
 import { CreatePostDto } from './dto/create-post.dto';
+import { UpdatePostDto } from './dto/update-post.dto';
 
 const postUserInclude = {
   user: {
@@ -69,7 +70,7 @@ export class PostsService {
   }
 
   // Actualizar publicación
-  async update(id: string, userId: string, data: CreatePostDto) {
+  async update(id: string, userId: string, data: UpdatePostDto) {
     const post = await this.prisma.post.findUnique({
       where: {
         id,

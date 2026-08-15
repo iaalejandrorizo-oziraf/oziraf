@@ -13,6 +13,7 @@ import {
 
 import { PostsService } from './posts.service';
 import { CreatePostDto } from './dto/create-post.dto';
+import { UpdatePostDto } from './dto/update-post.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 @Controller('posts')
@@ -63,9 +64,9 @@ export class PostsController {
   async update(
     @Param('id') id: string,
     @Request() req,
-    @Body() createPostDto: CreatePostDto,
+    @Body() updatePostDto: UpdatePostDto,
   ) {
-    return this.postsService.update(id, req.user.userId, createPostDto);
+    return this.postsService.update(id, req.user.userId, updatePostDto);
   }
 
   @UseGuards(JwtAuthGuard)

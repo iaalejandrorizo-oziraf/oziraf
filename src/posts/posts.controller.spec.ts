@@ -61,4 +61,30 @@ describe('PostsController', () => {
     expect(postsService.findMine).toHaveBeenCalledWith('user-1');
     expect(result).toBe(posts);
   });
+
+  it('updates a post with partial data for the authenticated user', async () => {
+    const post = {
+      id: 'post-1',
+      title: 'Servicio actualizado',
+      userId: 'user-1',
+    };
+    postsService.update.mockResolvedValue(post);
+
+    const result = await controller.update(
+      'post-1',
+      {
+        user: {
+          userId: 'user-1',
+        },
+      },
+      {
+        title: 'Servicio actualizado',
+      },
+    );
+
+    expect(postsService.update).toHaveBeenCalledWith('post-1', 'user-1', {
+      title: 'Servicio actualizado',
+    });
+    expect(result).toBe(post);
+  });
 });

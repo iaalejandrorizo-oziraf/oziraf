@@ -522,7 +522,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"title\": \"Servicio de arquitectura residencial actualizado\",\n  \"description\": \"Diseño, remodelación y dirección de obra para vivienda y locales.\",\n  \"category\": \"Arquitectura\",\n  \"country\": \"México\",\n  \"city\": \"Guadalajara\",\n  \"state\": \"Jalisco\",\n  \"neighborhood\": \"Americana\",\n  \"price\": 3000\n}"
+              "raw": "{\n  \"title\": \"Servicio de arquitectura residencial actualizado\",\n  \"price\": 3000\n}"
             },
             "url": {
               "raw": "{{base_url}}/posts/{{post_id}}",
