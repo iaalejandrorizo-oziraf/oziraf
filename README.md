@@ -39,6 +39,10 @@ npm run start:dev
 
 ## Main Endpoints
 
+### Health
+
+- `GET /health`
+
 ### Auth
 
 - `POST /auth/register`

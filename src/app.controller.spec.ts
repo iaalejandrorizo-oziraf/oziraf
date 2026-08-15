@@ -16,6 +16,16 @@ describe('AppController', () => {
 
   describe('root', () => {
     it('should return API health', () => {
+      expect(appController.getRootHealth()).toEqual({
+        name: 'OZIRAF API',
+        status: 'ok',
+        version: '4.6',
+      });
+    });
+  });
+
+  describe('health', () => {
+    it('should return API health', () => {
       expect(appController.getHealth()).toEqual({
         name: 'OZIRAF API',
         status: 'ok',
