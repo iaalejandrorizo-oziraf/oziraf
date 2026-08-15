@@ -10,6 +10,8 @@ describe('AuthController', () => {
     changePassword: jest.Mock;
     requestPasswordReset: jest.Mock;
     confirmPasswordReset: jest.Mock;
+    requestEmailVerification: jest.Mock;
+    confirmEmailVerification: jest.Mock;
   };
 
   beforeEach(async () => {
@@ -19,6 +21,8 @@ describe('AuthController', () => {
       changePassword: jest.fn(),
       requestPasswordReset: jest.fn(),
       confirmPasswordReset: jest.fn(),
+      requestEmailVerification: jest.fn(),
+      confirmEmailVerification: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -96,6 +100,43 @@ describe('AuthController', () => {
     expect(authService.confirmPasswordReset).toHaveBeenCalledWith({
       token: 'reset-token',
       newPassword: 'NewPassword123',
+    });
+    expect(result).toBe(user);
+  });
+
+  it('requests email verification for the authenticated user', async () => {
+    const response = {
+      message: 'ok',
+      verificationToken: 'verification-token',
+    };
+    authService.requestEmailVerification.mockResolvedValue(response);
+
+    const result = await controller.requestEmailVerification({
+      user: {
+        userId: 'user-1',
+      },
+    });
+
+    expect(authService.requestEmailVerification).toHaveBeenCalledWith(
+      'user-1',
+    );
+    expect(result).toBe(response);
+  });
+
+  it('confirms email verification', async () => {
+    const user = {
+      id: 'user-1',
+      email: 'user@example.com',
+      emailVerified: true,
+    };
+    authService.confirmEmailVerification.mockResolvedValue(user);
+
+    const result = await controller.confirmEmailVerification({
+      token: 'verification-token',
+    });
+
+    expect(authService.confirmEmailVerification).toHaveBeenCalledWith({
+      token: 'verification-token',
     });
     expect(result).toBe(user);
   });

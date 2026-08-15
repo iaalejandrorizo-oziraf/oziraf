@@ -13,6 +13,10 @@ describe('AuthService', () => {
     createPasswordResetToken: jest.Mock;
     findPasswordResetToken: jest.Mock;
     markPasswordResetTokenUsed: jest.Mock;
+    createEmailVerificationToken: jest.Mock;
+    findEmailVerificationToken: jest.Mock;
+    markEmailVerificationTokenUsed: jest.Mock;
+    markEmailVerified: jest.Mock;
     updatePassword: jest.Mock;
   };
 
@@ -24,6 +28,10 @@ describe('AuthService', () => {
       createPasswordResetToken: jest.fn(),
       findPasswordResetToken: jest.fn(),
       markPasswordResetTokenUsed: jest.fn(),
+      createEmailVerificationToken: jest.fn(),
+      findEmailVerificationToken: jest.fn(),
+      markEmailVerificationTokenUsed: jest.fn(),
+      markEmailVerified: jest.fn(),
       updatePassword: jest.fn(),
     };
 
@@ -189,6 +197,57 @@ describe('AuthService', () => {
     expect(usersService.markPasswordResetTokenUsed).toHaveBeenCalledWith(
       'reset-token-id',
     );
+    expect(result).not.toHaveProperty('password');
+  });
+
+  it('creates email verification tokens for active unverified users', async () => {
+    usersService.findPrivateById.mockResolvedValue({
+      id: 'user-1',
+      status: 'ACTIVE',
+      emailVerified: false,
+    });
+    usersService.createEmailVerificationToken.mockResolvedValue({
+      id: 'verification-token-id',
+    });
+
+    const result = await service.requestEmailVerification('user-1');
+
+    expect(usersService.createEmailVerificationToken).toHaveBeenCalledWith(
+      'user-1',
+      expect.any(String),
+      expect.any(Date),
+    );
+    expect(result).toHaveProperty('verificationToken');
+  });
+
+  it('confirms valid email verification tokens', async () => {
+    usersService.findEmailVerificationToken.mockResolvedValue({
+      id: 'verification-token-id',
+      userId: 'user-1',
+      usedAt: null,
+      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+      user: {
+        status: 'ACTIVE',
+      },
+    });
+    usersService.markEmailVerified.mockResolvedValue({
+      id: 'user-1',
+      email: 'user@example.com',
+      emailVerified: true,
+    });
+    usersService.markEmailVerificationTokenUsed.mockResolvedValue({
+      id: 'verification-token-id',
+    });
+
+    const result = await service.confirmEmailVerification({
+      token: 'verification-token',
+    });
+
+    expect(usersService.markEmailVerified).toHaveBeenCalledWith('user-1');
+    expect(usersService.markEmailVerificationTokenUsed).toHaveBeenCalledWith(
+      'verification-token-id',
+    );
+    expect(result).toHaveProperty('emailVerified', true);
     expect(result).not.toHaveProperty('password');
   });
 });

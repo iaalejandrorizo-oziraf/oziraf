@@ -12,6 +12,7 @@ import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
+import { ConfirmEmailVerificationDto } from './dto/confirm-email-verification.dto';
 import { ConfirmPasswordResetDto } from './dto/confirm-password-reset.dto';
 import { RequestPasswordResetDto } from './dto/request-password-reset.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
@@ -42,6 +43,21 @@ export class AuthController {
     @Body() confirmPasswordResetDto: ConfirmPasswordResetDto,
   ) {
     return this.authService.confirmPasswordReset(confirmPasswordResetDto);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('email-verification/request')
+  requestEmailVerification(@Request() req) {
+    return this.authService.requestEmailVerification(req.user.userId);
+  }
+
+  @Post('email-verification/confirm')
+  confirmEmailVerification(
+    @Body() confirmEmailVerificationDto: ConfirmEmailVerificationDto,
+  ) {
+    return this.authService.confirmEmailVerification(
+      confirmEmailVerificationDto,
+    );
   }
 
   @UseGuards(JwtAuthGuard)

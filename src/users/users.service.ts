@@ -150,6 +150,54 @@ export class UsersService {
     });
   }
 
+  async createEmailVerificationToken(
+    userId: string,
+    tokenHash: string,
+    expiresAt: Date,
+  ) {
+    return this.prisma.emailVerificationToken.create({
+      data: {
+        userId,
+        tokenHash,
+        expiresAt,
+      },
+    });
+  }
+
+  async findEmailVerificationToken(tokenHash: string) {
+    return this.prisma.emailVerificationToken.findUnique({
+      where: {
+        tokenHash,
+      },
+      include: {
+        user: true,
+      },
+    });
+  }
+
+  async markEmailVerificationTokenUsed(id: string) {
+    return this.prisma.emailVerificationToken.update({
+      where: {
+        id,
+      },
+      data: {
+        usedAt: new Date(),
+      },
+    });
+  }
+
+  async markEmailVerified(id: string) {
+    return this.prisma.user.update({
+      where: {
+        id,
+      },
+      data: {
+        emailVerified: true,
+      },
+      select: publicUserSelect,
+    });
+  }
+
   async updateStatus(id: string, data: UpdateUserStatusDto) {
     return this.prisma.user.update({
       where: {

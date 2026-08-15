@@ -31,6 +31,7 @@ model User {
   receivedLeads ContactLead[] @relation("LeadOwner")
   reports       PostReport[]
   passwordResetTokens PasswordResetToken[]
+  emailVerificationTokens EmailVerificationToken[]
 }
 
 model Post {
@@ -94,6 +95,16 @@ model PostReport {
 }
 
 model PasswordResetToken {
+  id        String    @id @default(cuid())
+  userId    String
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model EmailVerificationToken {
   id        String    @id @default(cuid())
   userId    String
   tokenHash String    @unique

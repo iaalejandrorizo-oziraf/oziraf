@@ -8,6 +8,7 @@ import { UsersService } from '../users/users.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
+import { ConfirmEmailVerificationDto } from './dto/confirm-email-verification.dto';
 import { ConfirmPasswordResetDto } from './dto/confirm-password-reset.dto';
 import { RequestPasswordResetDto } from './dto/request-password-reset.dto';
 import * as bcrypt from 'bcrypt';
@@ -15,6 +16,8 @@ import { createHash, randomBytes } from 'crypto';
 
 const PASSWORD_RESET_MESSAGE =
   'Si el correo existe, recibirás instrucciones para recuperar tu contraseña';
+const EMAIL_VERIFICATION_MESSAGE =
+  'Si tu cuenta está activa, recibirás instrucciones para verificar tu correo';
 
 function hashToken(token: string) {
   return createHash('sha256').update(token).digest('hex');
@@ -158,6 +161,58 @@ export class AuthService {
     );
 
     await this.usersService.markPasswordResetTokenUsed(resetToken.id);
+
+    return user;
+  }
+
+  async requestEmailVerification(userId: string) {
+    const user = await this.usersService.findPrivateById(userId);
+
+    if (!user || user.status !== 'ACTIVE' || user.emailVerified) {
+      return {
+        message: EMAIL_VERIFICATION_MESSAGE,
+      };
+    }
+
+    const verificationToken = randomBytes(32).toString('hex');
+    const tokenHash = hashToken(verificationToken);
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+
+    await this.usersService.createEmailVerificationToken(
+      user.id,
+      tokenHash,
+      expiresAt,
+    );
+
+    return {
+      message: EMAIL_VERIFICATION_MESSAGE,
+      verificationToken,
+    };
+  }
+
+  async confirmEmailVerification(
+    confirmEmailVerificationDto: ConfirmEmailVerificationDto,
+  ) {
+    const tokenHash = hashToken(confirmEmailVerificationDto.token);
+    const verificationToken =
+      await this.usersService.findEmailVerificationToken(tokenHash);
+
+    if (
+      !verificationToken ||
+      verificationToken.usedAt ||
+      verificationToken.expiresAt.getTime() < Date.now() ||
+      verificationToken.user.status !== 'ACTIVE'
+    ) {
+      throw new UnauthorizedException('El token de verificación no es válido');
+    }
+
+    const user = await this.usersService.markEmailVerified(
+      verificationToken.userId,
+    );
+
+    await this.usersService.markEmailVerificationTokenUsed(
+      verificationToken.id,
+    );
 
     return user;
   }

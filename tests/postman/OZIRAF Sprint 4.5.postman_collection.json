@@ -295,6 +295,100 @@
               }
             }
           ]
+        },
+        {
+          "name": "Request email verification",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/auth/email-verification/request",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "email-verification",
+                "request"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Email verification request is handled', function () {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+                  "});",
+                  "",
+                  "const json = pm.response.json();",
+                  "if (json.verificationToken) {",
+                  "  pm.collectionVariables.set('verification_token', json.verificationToken);",
+                  "  pm.environment.set('verification_token', json.verificationToken);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Confirm email verification",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"{{verification_token}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/email-verification/confirm",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "email-verification",
+                "confirm"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Email verification confirm is handled', function () {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([200, 201, 401]);",
+                  "});",
+                  "if (pm.response.code < 300) {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json).to.not.have.property('password');",
+                  "  pm.expect(json.emailVerified).to.eql(true);",
+                  "}"
+                ]
+              }
+            }
+          ]
         }
       ]
     },
@@ -1697,6 +1791,11 @@
     },
     {
       "key": "reset_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "verification_token",
       "value": "",
       "type": "string"
     }

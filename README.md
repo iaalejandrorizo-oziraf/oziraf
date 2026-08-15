@@ -47,6 +47,8 @@ npm run start:dev
 - `PATCH /auth/password`
 - `POST /auth/password-reset/request`
 - `POST /auth/password-reset/confirm`
+- `POST /auth/email-verification/request`
+- `POST /auth/email-verification/confirm`
 
 ### Users
 
@@ -113,7 +115,7 @@ The API uses a global validation pipe with:
 - DTO validation enabled
 - query/body transformation enabled
 
-Current protections include trimmed text input, length limits, valid profile photo URLs, positive prices, paginated listings and public user responses without passwords.
+Current protections include trimmed text input, length limits, valid profile photo URLs, positive prices, paginated listings, password reset tokens, email verification tokens and public user responses without passwords.
 Public post listings return only active posts. Users can pause and reactivate their own posts with `ACTIVE` and `INACTIVE`. Deleting a post marks it as `DELETED` instead of removing the row. Users cannot add their own posts to favorites or contact their own posts.
 
 ## Paginated Responses

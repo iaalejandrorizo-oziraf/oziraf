@@ -10,6 +10,11 @@ describe('UsersService', () => {
       findUnique: jest.Mock;
       update: jest.Mock;
     };
+    emailVerificationToken: {
+      create: jest.Mock;
+      findUnique: jest.Mock;
+      update: jest.Mock;
+    };
     user: {
       count: jest.Mock;
       create: jest.Mock;
@@ -41,6 +46,11 @@ describe('UsersService', () => {
   beforeEach(async () => {
     prisma = {
       passwordResetToken: {
+        create: jest.fn(),
+        findUnique: jest.fn(),
+        update: jest.fn(),
+      },
+      emailVerificationToken: {
         create: jest.fn(),
         findUnique: jest.fn(),
         update: jest.fn(),
@@ -270,6 +280,92 @@ describe('UsersService', () => {
       },
     });
     expect(result).toHaveProperty('usedAt');
+  });
+
+  it('creates email verification tokens', async () => {
+    const expiresAt = new Date('2026-01-02T00:00:00.000Z');
+    prisma.emailVerificationToken.create.mockResolvedValue({
+      id: 'verification-token-id',
+      userId: 'user-1',
+      tokenHash: 'token-hash',
+      expiresAt,
+    });
+
+    const result = await service.createEmailVerificationToken(
+      'user-1',
+      'token-hash',
+      expiresAt,
+    );
+
+    expect(prisma.emailVerificationToken.create).toHaveBeenCalledWith({
+      data: {
+        userId: 'user-1',
+        tokenHash: 'token-hash',
+        expiresAt,
+      },
+    });
+    expect(result).toHaveProperty('tokenHash', 'token-hash');
+  });
+
+  it('finds email verification tokens by hash', async () => {
+    prisma.emailVerificationToken.findUnique.mockResolvedValue({
+      id: 'verification-token-id',
+      tokenHash: 'token-hash',
+    });
+
+    const result = await service.findEmailVerificationToken('token-hash');
+
+    expect(prisma.emailVerificationToken.findUnique).toHaveBeenCalledWith({
+      where: {
+        tokenHash: 'token-hash',
+      },
+      include: {
+        user: true,
+      },
+    });
+    expect(result).toHaveProperty('tokenHash', 'token-hash');
+  });
+
+  it('marks email verification tokens as used', async () => {
+    prisma.emailVerificationToken.update.mockResolvedValue({
+      id: 'verification-token-id',
+      usedAt: new Date('2026-01-02T00:00:00.000Z'),
+    });
+
+    const result = await service.markEmailVerificationTokenUsed(
+      'verification-token-id',
+    );
+
+    expect(prisma.emailVerificationToken.update).toHaveBeenCalledWith({
+      where: {
+        id: 'verification-token-id',
+      },
+      data: {
+        usedAt: expect.any(Date),
+      },
+    });
+    expect(result).toHaveProperty('usedAt');
+  });
+
+  it('marks users as email verified with the public user selection', async () => {
+    prisma.user.update.mockResolvedValue({
+      ...publicUser,
+      emailVerified: true,
+    });
+
+    const result = await service.markEmailVerified('user-1');
+
+    expect(prisma.user.update).toHaveBeenCalledWith({
+      where: {
+        id: 'user-1',
+      },
+      data: {
+        emailVerified: true,
+      },
+      select: publicUserSelect,
+    });
+    expect(result).toHaveProperty('emailVerified', true);
+    expect(result).not.toHaveProperty('password');
   });
 
   it('updates user status with the public user selection', async () => {
