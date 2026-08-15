@@ -77,6 +77,11 @@ npm run start:dev
 - `GET /contacts/leads?page=1&limit=10&status=NEW`
 - `PATCH /contacts/leads/:id/status`
 
+### Reports
+
+- `POST /reports/posts/:postId`
+- `GET /reports/me`
+
 ## Postman
 
 The collection and local environment are in:

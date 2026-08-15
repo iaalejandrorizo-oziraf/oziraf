@@ -9,6 +9,7 @@ import { PrismaModule } from './prisma/prisma.module';
 import { PostsModule } from './posts/posts.module';
 import { FavoritesModule } from './favorites/favorites.module';
 import { ContactsModule } from './contacts/contacts.module';
+import { ReportsModule } from './reports/reports.module';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { ContactsModule } from './contacts/contacts.module';
     PostsModule,
     FavoritesModule,
     ContactsModule,
+    ReportsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -29,6 +29,7 @@ model User {
   favorites     Favorite[]
   sentLeads     ContactLead[] @relation("LeadSender")
   receivedLeads ContactLead[] @relation("LeadOwner")
+  reports       PostReport[]
 }
 
 model Post {
@@ -48,6 +49,7 @@ model Post {
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   favorites    Favorite[]
   leads        ContactLead[]
+  reports      PostReport[]
 }
 
 model Favorite {
@@ -73,4 +75,19 @@ model ContactLead {
   post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
   sender    User     @relation("LeadSender", fields: [senderId], references: [id], onDelete: Cascade)
   owner     User     @relation("LeadOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+}
+
+model PostReport {
+  id         String   @id @default(cuid())
+  postId     String
+  reporterId String
+  reason     String
+  details    String?
+  status     String   @default("OPEN")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  post       Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  reporter   User     @relation(fields: [reporterId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, reporterId])
 }
