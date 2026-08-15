@@ -204,6 +204,97 @@
               }
             }
           ]
+        },
+        {
+          "name": "Request password reset",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"oziraf.user@example.com\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/password-reset/request",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "password-reset",
+                "request"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Password reset request is handled', function () {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+                  "});",
+                  "",
+                  "const json = pm.response.json();",
+                  "if (json.resetToken) {",
+                  "  pm.collectionVariables.set('reset_token', json.resetToken);",
+                  "  pm.environment.set('reset_token', json.resetToken);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Confirm password reset",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"{{reset_token}}\",\n  \"newPassword\": \"Password123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/password-reset/confirm",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "password-reset",
+                "confirm"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Password reset confirm is handled', function () {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([200, 201, 401]);",
+                  "});",
+                  "if (pm.response.code < 300) {",
+                  "  pm.expect(pm.response.json()).to.not.have.property('password');",
+                  "}"
+                ]
+              }
+            }
+          ]
         }
       ]
     },
@@ -1601,6 +1692,11 @@
     },
     {
       "key": "report_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "reset_token",
       "value": "",
       "type": "string"
     }

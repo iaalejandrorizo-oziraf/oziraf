@@ -8,6 +8,8 @@ describe('AuthController', () => {
     register: jest.Mock;
     login: jest.Mock;
     changePassword: jest.Mock;
+    requestPasswordReset: jest.Mock;
+    confirmPasswordReset: jest.Mock;
   };
 
   beforeEach(async () => {
@@ -15,6 +17,8 @@ describe('AuthController', () => {
       register: jest.fn(),
       login: jest.fn(),
       changePassword: jest.fn(),
+      requestPasswordReset: jest.fn(),
+      confirmPasswordReset: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -55,6 +59,42 @@ describe('AuthController', () => {
 
     expect(authService.changePassword).toHaveBeenCalledWith('user-1', {
       currentPassword: 'Password123',
+      newPassword: 'NewPassword123',
+    });
+    expect(result).toBe(user);
+  });
+
+  it('requests password reset', async () => {
+    const response = {
+      message: 'ok',
+      resetToken: 'reset-token',
+    };
+    authService.requestPasswordReset.mockResolvedValue(response);
+
+    const result = await controller.requestPasswordReset({
+      email: 'user@example.com',
+    });
+
+    expect(authService.requestPasswordReset).toHaveBeenCalledWith({
+      email: 'user@example.com',
+    });
+    expect(result).toBe(response);
+  });
+
+  it('confirms password reset', async () => {
+    const user = {
+      id: 'user-1',
+      email: 'user@example.com',
+    };
+    authService.confirmPasswordReset.mockResolvedValue(user);
+
+    const result = await controller.confirmPasswordReset({
+      token: 'reset-token',
+      newPassword: 'NewPassword123',
+    });
+
+    expect(authService.confirmPasswordReset).toHaveBeenCalledWith({
+      token: 'reset-token',
       newPassword: 'NewPassword123',
     });
     expect(result).toBe(user);

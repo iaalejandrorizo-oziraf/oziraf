@@ -5,6 +5,11 @@ import { PrismaService } from '../prisma/prisma.service';
 describe('UsersService', () => {
   let service: UsersService;
   let prisma: {
+    passwordResetToken: {
+      create: jest.Mock;
+      findUnique: jest.Mock;
+      update: jest.Mock;
+    };
     user: {
       count: jest.Mock;
       create: jest.Mock;
@@ -35,6 +40,11 @@ describe('UsersService', () => {
 
   beforeEach(async () => {
     prisma = {
+      passwordResetToken: {
+        create: jest.fn(),
+        findUnique: jest.fn(),
+        update: jest.fn(),
+      },
       user: {
         count: jest.fn(),
         create: jest.fn(),
@@ -197,6 +207,69 @@ describe('UsersService', () => {
       select: publicUserSelect,
     });
     expect(result).not.toHaveProperty('password');
+  });
+
+  it('creates password reset tokens', async () => {
+    const expiresAt = new Date('2026-01-01T01:00:00.000Z');
+    prisma.passwordResetToken.create.mockResolvedValue({
+      id: 'reset-token-id',
+      userId: 'user-1',
+      tokenHash: 'token-hash',
+      expiresAt,
+    });
+
+    const result = await service.createPasswordResetToken(
+      'user-1',
+      'token-hash',
+      expiresAt,
+    );
+
+    expect(prisma.passwordResetToken.create).toHaveBeenCalledWith({
+      data: {
+        userId: 'user-1',
+        tokenHash: 'token-hash',
+        expiresAt,
+      },
+    });
+    expect(result).toHaveProperty('tokenHash', 'token-hash');
+  });
+
+  it('finds password reset tokens by hash', async () => {
+    prisma.passwordResetToken.findUnique.mockResolvedValue({
+      id: 'reset-token-id',
+      tokenHash: 'token-hash',
+    });
+
+    const result = await service.findPasswordResetToken('token-hash');
+
+    expect(prisma.passwordResetToken.findUnique).toHaveBeenCalledWith({
+      where: {
+        tokenHash: 'token-hash',
+      },
+      include: {
+        user: true,
+      },
+    });
+    expect(result).toHaveProperty('tokenHash', 'token-hash');
+  });
+
+  it('marks password reset tokens as used', async () => {
+    prisma.passwordResetToken.update.mockResolvedValue({
+      id: 'reset-token-id',
+      usedAt: new Date('2026-01-01T01:00:00.000Z'),
+    });
+
+    const result = await service.markPasswordResetTokenUsed('reset-token-id');
+
+    expect(prisma.passwordResetToken.update).toHaveBeenCalledWith({
+      where: {
+        id: 'reset-token-id',
+      },
+      data: {
+        usedAt: expect.any(Date),
+      },
+    });
+    expect(result).toHaveProperty('usedAt');
   });
 
   it('updates user status with the public user selection', async () => {

@@ -10,6 +10,9 @@ describe('AuthService', () => {
     create: jest.Mock;
     findByEmail: jest.Mock;
     findPrivateById: jest.Mock;
+    createPasswordResetToken: jest.Mock;
+    findPasswordResetToken: jest.Mock;
+    markPasswordResetTokenUsed: jest.Mock;
     updatePassword: jest.Mock;
   };
 
@@ -18,6 +21,9 @@ describe('AuthService', () => {
       create: jest.fn(),
       findByEmail: jest.fn(),
       findPrivateById: jest.fn(),
+      createPasswordResetToken: jest.fn(),
+      findPasswordResetToken: jest.fn(),
+      markPasswordResetTokenUsed: jest.fn(),
       updatePassword: jest.fn(),
     };
 
@@ -129,5 +135,60 @@ describe('AuthService', () => {
         password: 'Password123',
       }),
     ).rejects.toThrow('La cuenta no está activa');
+  });
+
+  it('creates password reset tokens for active users', async () => {
+    usersService.findByEmail.mockResolvedValue({
+      id: 'user-1',
+      email: 'user@example.com',
+      status: 'ACTIVE',
+    });
+    usersService.createPasswordResetToken.mockResolvedValue({
+      id: 'reset-token-id',
+    });
+
+    const result = await service.requestPasswordReset({
+      email: 'user@example.com',
+    });
+
+    expect(usersService.createPasswordResetToken).toHaveBeenCalledWith(
+      'user-1',
+      expect.any(String),
+      expect.any(Date),
+    );
+    expect(result).toHaveProperty('resetToken');
+  });
+
+  it('confirms valid password reset tokens', async () => {
+    usersService.findPasswordResetToken.mockResolvedValue({
+      id: 'reset-token-id',
+      userId: 'user-1',
+      usedAt: null,
+      expiresAt: new Date(Date.now() + 60 * 60 * 1000),
+      user: {
+        status: 'ACTIVE',
+      },
+    });
+    usersService.updatePassword.mockResolvedValue({
+      id: 'user-1',
+      email: 'user@example.com',
+    });
+    usersService.markPasswordResetTokenUsed.mockResolvedValue({
+      id: 'reset-token-id',
+    });
+
+    const result = await service.confirmPasswordReset({
+      token: 'reset-token',
+      newPassword: 'NewPassword123',
+    });
+
+    expect(usersService.updatePassword).toHaveBeenCalledWith(
+      'user-1',
+      expect.any(String),
+    );
+    expect(usersService.markPasswordResetTokenUsed).toHaveBeenCalledWith(
+      'reset-token-id',
+    );
+    expect(result).not.toHaveProperty('password');
   });
 });

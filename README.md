@@ -45,6 +45,8 @@ npm run start:dev
 - `POST /auth/login`
 - `GET /auth/me`
 - `PATCH /auth/password`
+- `POST /auth/password-reset/request`
+- `POST /auth/password-reset/confirm`
 
 ### Users
 

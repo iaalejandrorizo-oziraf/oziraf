@@ -8,7 +8,17 @@ import { UsersService } from '../users/users.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
+import { ConfirmPasswordResetDto } from './dto/confirm-password-reset.dto';
+import { RequestPasswordResetDto } from './dto/request-password-reset.dto';
 import * as bcrypt from 'bcrypt';
+import { createHash, randomBytes } from 'crypto';
+
+const PASSWORD_RESET_MESSAGE =
+  'Si el correo existe, recibirás instrucciones para recuperar tu contraseña';
+
+function hashToken(token: string) {
+  return createHash('sha256').update(token).digest('hex');
+}
 
 @Injectable()
 export class AuthService {
@@ -94,5 +104,61 @@ export class AuthService {
     );
 
     return this.usersService.updatePassword(userId, hashedPassword);
+  }
+
+  async requestPasswordReset(requestPasswordResetDto: RequestPasswordResetDto) {
+    const user = await this.usersService.findByEmail(
+      requestPasswordResetDto.email,
+    );
+
+    if (!user || user.status !== 'ACTIVE') {
+      return {
+        message: PASSWORD_RESET_MESSAGE,
+      };
+    }
+
+    const resetToken = randomBytes(32).toString('hex');
+    const tokenHash = hashToken(resetToken);
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
+
+    await this.usersService.createPasswordResetToken(
+      user.id,
+      tokenHash,
+      expiresAt,
+    );
+
+    return {
+      message: PASSWORD_RESET_MESSAGE,
+      resetToken,
+    };
+  }
+
+  async confirmPasswordReset(confirmPasswordResetDto: ConfirmPasswordResetDto) {
+    const tokenHash = hashToken(confirmPasswordResetDto.token);
+    const resetToken =
+      await this.usersService.findPasswordResetToken(tokenHash);
+
+    if (
+      !resetToken ||
+      resetToken.usedAt ||
+      resetToken.expiresAt.getTime() < Date.now() ||
+      resetToken.user.status !== 'ACTIVE'
+    ) {
+      throw new UnauthorizedException('El token de recuperación no es válido');
+    }
+
+    const hashedPassword = await bcrypt.hash(
+      confirmPasswordResetDto.newPassword,
+      10,
+    );
+
+    const user = await this.usersService.updatePassword(
+      resetToken.userId,
+      hashedPassword,
+    );
+
+    await this.usersService.markPasswordResetTokenUsed(resetToken.id);
+
+    return user;
   }
 }
