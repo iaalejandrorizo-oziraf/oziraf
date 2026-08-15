@@ -150,6 +150,30 @@ describe('PostsService', () => {
     });
   });
 
+  it('returns active and inactive post stats for a user', async () => {
+    prisma.post.count.mockResolvedValueOnce(2).mockResolvedValueOnce(1);
+
+    const result = await service.findMyStats('user-1');
+
+    expect(prisma.post.count).toHaveBeenNthCalledWith(1, {
+      where: {
+        userId: 'user-1',
+        status: 'ACTIVE',
+      },
+    });
+    expect(prisma.post.count).toHaveBeenNthCalledWith(2, {
+      where: {
+        userId: 'user-1',
+        status: 'INACTIVE',
+      },
+    });
+    expect(result).toEqual({
+      active: 2,
+      inactive: 1,
+      total: 3,
+    });
+  });
+
   it('searches posts with filters and pagination metadata', async () => {
     const posts = [
       {

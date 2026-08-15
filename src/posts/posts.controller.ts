@@ -41,6 +41,12 @@ export class PostsController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @Get('me/stats')
+  async findMyStats(@Request() req) {
+    return this.postsService.findMyStats(req.user.userId);
+  }
+
+  @UseGuards(JwtAuthGuard)
   @Get('me')
   async findMine(@Request() req, @Query() query: MyPostsQueryDto) {
     return this.postsService.findMine(req.user.userId, query);

@@ -9,6 +9,7 @@ describe('PostsController', () => {
     findAll: jest.Mock;
     findFilters: jest.Mock;
     findMine: jest.Mock;
+    findMyStats: jest.Mock;
     findOne: jest.Mock;
     update: jest.Mock;
     updateStatus: jest.Mock;
@@ -22,6 +23,7 @@ describe('PostsController', () => {
       findAll: jest.fn(),
       findFilters: jest.fn(),
       findMine: jest.fn(),
+      findMyStats: jest.fn(),
       findOne: jest.fn(),
       update: jest.fn(),
       updateStatus: jest.fn(),
@@ -152,6 +154,24 @@ describe('PostsController', () => {
 
     expect(postsService.findFilters).toHaveBeenCalled();
     expect(result).toBe(filters);
+  });
+
+  it('returns stats for the authenticated user posts', async () => {
+    const stats = {
+      active: 2,
+      inactive: 1,
+      total: 3,
+    };
+    postsService.findMyStats.mockResolvedValue(stats);
+
+    const result = await controller.findMyStats({
+      user: {
+        userId: 'user-1',
+      },
+    });
+
+    expect(postsService.findMyStats).toHaveBeenCalledWith('user-1');
+    expect(result).toBe(stats);
   });
 
   it('updates a post with partial data for the authenticated user', async () => {

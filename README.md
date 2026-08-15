@@ -54,6 +54,7 @@ npm run start:dev
 
 - `POST /posts`
 - `GET /posts?page=1&limit=10&sortBy=createdAt&sortOrder=desc`
+- `GET /posts/me/stats`
 - `GET /posts/me?page=1&limit=10&sortBy=createdAt&sortOrder=desc&status=INACTIVE`
 - `GET /posts/search?q=arquitectura&minPrice=1000&maxPrice=5000&page=1&limit=10&sortBy=createdAt&sortOrder=desc`
 - `GET /posts/filters`

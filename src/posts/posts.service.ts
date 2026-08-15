@@ -98,6 +98,29 @@ export class PostsService {
     return buildPaginatedResponse(posts, total, options);
   }
 
+  async findMyStats(userId: string) {
+    const [active, inactive] = await Promise.all([
+      this.prisma.post.count({
+        where: {
+          userId,
+          status: 'ACTIVE',
+        },
+      }),
+      this.prisma.post.count({
+        where: {
+          userId,
+          status: 'INACTIVE',
+        },
+      }),
+    ]);
+
+    return {
+      active,
+      inactive,
+      total: active + inactive,
+    };
+  }
+
   async findFilters() {
     const [categories, countries, states, cities] = await Promise.all([
       this.prisma.post.findMany({
