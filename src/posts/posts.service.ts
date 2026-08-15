@@ -75,12 +75,18 @@ export class PostsService {
 
   // Obtener una publicación por ID
   async findOne(id: string) {
-    return this.prisma.post.findUnique({
+    const post = await this.prisma.post.findUnique({
       where: {
         id,
       },
       include: postUserInclude,
     });
+
+    if (!post) {
+      throw new NotFoundException('La publicación no existe');
+    }
+
+    return post;
   }
 
   // Actualizar publicación

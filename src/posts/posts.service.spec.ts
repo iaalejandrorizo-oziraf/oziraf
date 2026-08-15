@@ -112,6 +112,45 @@ describe('PostsService', () => {
     expect(result).toEqual([]);
   });
 
+  it('finds one post by id', async () => {
+    const post = {
+      id: 'post-1',
+      title: 'Servicio de arquitectura',
+      userId: 'user-1',
+    };
+    prisma.post.findUnique.mockResolvedValue(post);
+
+    const result = await service.findOne('post-1');
+
+    expect(prisma.post.findUnique).toHaveBeenCalledWith({
+      where: {
+        id: 'post-1',
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            profession: true,
+            city: true,
+            state: true,
+            profilePhoto: true,
+          },
+        },
+      },
+    });
+    expect(result).toBe(post);
+  });
+
+  it('rejects missing posts by id', async () => {
+    prisma.post.findUnique.mockResolvedValue(null);
+
+    await expect(service.findOne('post-1')).rejects.toBeInstanceOf(
+      NotFoundException,
+    );
+  });
+
   it('updates a post when it belongs to the user', async () => {
     const existingPost = {
       id: 'post-1',
