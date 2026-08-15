@@ -70,6 +70,11 @@ npm run start:dev
 - `GET /favorites/:postId/status`
 - `DELETE /favorites/:postId`
 
+### Contacts
+
+- `POST /contacts/posts/:postId`
+- `GET /contacts/leads`
+
 ## Postman
 
 The collection and local environment are in:
@@ -96,7 +101,7 @@ The API uses a global validation pipe with:
 - query/body transformation enabled
 
 Current protections include trimmed text input, length limits, valid profile photo URLs, positive prices, paginated listings and public user responses without passwords.
-Public post listings return only active posts. Users can pause and reactivate their own posts with `ACTIVE` and `INACTIVE`. Deleting a post marks it as `DELETED` instead of removing the row. Users cannot add their own posts to favorites.
+Public post listings return only active posts. Users can pause and reactivate their own posts with `ACTIVE` and `INACTIVE`. Deleting a post marks it as `DELETED` instead of removing the row. Users cannot add their own posts to favorites or contact their own posts.
 
 ## Paginated Responses
 

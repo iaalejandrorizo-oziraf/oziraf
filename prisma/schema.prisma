@@ -27,6 +27,8 @@ model User {
   state         String?
   posts         Post[]
   favorites     Favorite[]
+  sentLeads     ContactLead[] @relation("LeadSender")
+  receivedLeads ContactLead[] @relation("LeadOwner")
 }
 
 model Post {
@@ -45,6 +47,7 @@ model Post {
   country      String   @default("México")
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   favorites    Favorite[]
+  leads        ContactLead[]
 }
 
 model Favorite {
@@ -56,4 +59,18 @@ model Favorite {
   post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
 
   @@unique([userId, postId])
+}
+
+model ContactLead {
+  id        String   @id @default(cuid())
+  postId    String
+  senderId  String
+  ownerId   String
+  message   String
+  status    String   @default("NEW")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  sender    User     @relation("LeadSender", fields: [senderId], references: [id], onDelete: Cascade)
+  owner     User     @relation("LeadOwner", fields: [ownerId], references: [id], onDelete: Cascade)
 }
