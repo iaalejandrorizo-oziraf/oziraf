@@ -10,7 +10,7 @@ Backend API for OZIRAF built with NestJS, Prisma and PostgreSQL.
 
 ## Environment
 
-Create a `.env` file with:
+Copy `.env.example` to `.env` and set:
 
 ```env
 DATABASE_URL="postgresql://USER:PASSWORD@HOST:PORT/DATABASE"
@@ -34,12 +34,22 @@ npm run start:dev
 
 The API runs on `http://localhost:3000` by default.
 
+## Docker
+
+```bash
+docker build -t oziraf-backend .
+docker run --env-file .env -p 3000:3000 oziraf-backend
+```
+
+The container applies pending Prisma migrations before starting the API.
+
 ## Scripts
 
 ```bash
 npm run build
 npm run test
 npm run test:e2e
+npm run start:prod:migrate
 npm run start:dev
 ```
 
