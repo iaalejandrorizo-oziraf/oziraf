@@ -1,5 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { ForbiddenException, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  NotFoundException,
+} from '@nestjs/common';
 import { PostsService } from './posts.service';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -179,6 +183,15 @@ describe('PostsService', () => {
       total: 1,
       totalPages: 1,
     });
+  });
+
+  it('rejects search when min price is greater than max price', async () => {
+    await expect(
+      service.search({
+        minPrice: 5000,
+        maxPrice: 1000,
+      }),
+    ).rejects.toBeInstanceOf(BadRequestException);
   });
 
   it('returns available filters from active posts', async () => {

@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Injectable,
   ForbiddenException,
   NotFoundException,
@@ -218,6 +219,12 @@ export class PostsService {
   }
   async search(filters: SearchPostsQueryDto) {
     const { q, category, country, state, city, minPrice, maxPrice } = filters;
+
+    if (minPrice && maxPrice && minPrice > maxPrice) {
+      throw new BadRequestException(
+        'El precio mínimo no puede ser mayor al precio máximo',
+      );
+    }
 
     const where: Prisma.PostWhereInput = {
       status: 'ACTIVE',
