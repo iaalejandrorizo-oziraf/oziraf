@@ -162,7 +162,7 @@ export class PostsService {
       include: postUserInclude,
     });
 
-    if (!post) {
+    if (!post || post.status === 'DELETED') {
       throw new NotFoundException('La publicación no existe');
     }
 
@@ -177,7 +177,7 @@ export class PostsService {
       },
     });
 
-    if (!post) {
+    if (!post || post.status === 'DELETED') {
       throw new NotFoundException('La publicación no existe');
     }
 
@@ -203,7 +203,7 @@ export class PostsService {
       },
     });
 
-    if (!post) {
+    if (!post || post.status === 'DELETED') {
       throw new NotFoundException('La publicación no existe');
     }
 

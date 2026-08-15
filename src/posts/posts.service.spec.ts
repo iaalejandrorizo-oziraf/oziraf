@@ -266,6 +266,17 @@ describe('PostsService', () => {
     );
   });
 
+  it('rejects deleted posts by id', async () => {
+    prisma.post.findUnique.mockResolvedValue({
+      id: 'post-1',
+      status: 'DELETED',
+    });
+
+    await expect(service.findOne('post-1')).rejects.toBeInstanceOf(
+      NotFoundException,
+    );
+  });
+
   it('updates a post when it belongs to the user', async () => {
     const existingPost = {
       id: 'post-1',
@@ -296,6 +307,20 @@ describe('PostsService', () => {
 
   it('rejects updates for missing posts', async () => {
     prisma.post.findUnique.mockResolvedValue(null);
+
+    await expect(
+      service.update('post-1', 'user-1', {
+        title: 'Servicio actualizado',
+      }),
+    ).rejects.toBeInstanceOf(NotFoundException);
+  });
+
+  it('rejects updates for deleted posts', async () => {
+    prisma.post.findUnique.mockResolvedValue({
+      id: 'post-1',
+      userId: 'user-1',
+      status: 'DELETED',
+    });
 
     await expect(
       service.update('post-1', 'user-1', {
@@ -342,5 +367,17 @@ describe('PostsService', () => {
     });
     expect(prisma.post.delete).not.toHaveBeenCalled();
     expect(result).toBe(deletedPost);
+  });
+
+  it('rejects deleting already deleted posts', async () => {
+    prisma.post.findUnique.mockResolvedValue({
+      id: 'post-1',
+      userId: 'user-1',
+      status: 'DELETED',
+    });
+
+    await expect(service.remove('post-1', 'user-1')).rejects.toBeInstanceOf(
+      NotFoundException,
+    );
   });
 });
