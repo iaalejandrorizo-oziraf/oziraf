@@ -16,6 +16,8 @@ Create a `.env` file with:
 DATABASE_URL="postgresql://USER:PASSWORD@HOST:PORT/DATABASE"
 JWT_SECRET="your-secret"
 PORT=3000
+OZIRAF_ADMIN_EMAIL="admin@example.com"
+OZIRAF_ADMIN_PASSWORD="change-this-password"
 ```
 
 The API applies a broad global rate limit and stricter limits to sensitive auth actions such as login, registration, password reset and email verification.
@@ -25,6 +27,7 @@ The API applies a broad global rate limit and stricter limits to sensitive auth 
 ```bash
 npm install
 npx prisma migrate dev
+npm run db:seed
 npm run start:dev
 ```
 
