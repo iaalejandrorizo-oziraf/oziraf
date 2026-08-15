@@ -346,7 +346,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/posts/me?page=1&limit=10",
+              "raw": "{{base_url}}/posts/me?page=1&limit=10&sortBy=createdAt&sortOrder=desc",
               "host": [
                 "{{base_url}}"
               ],
@@ -362,6 +362,14 @@
                 {
                   "key": "limit",
                   "value": "10"
+                },
+                {
+                  "key": "sortBy",
+                  "value": "createdAt"
+                },
+                {
+                  "key": "sortOrder",
+                  "value": "desc"
                 }
               ]
             }
@@ -399,7 +407,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/posts?page=1&limit=10",
+              "raw": "{{base_url}}/posts?page=1&limit=10&sortBy=createdAt&sortOrder=desc",
               "host": [
                 "{{base_url}}"
               ],
@@ -414,6 +422,14 @@
                 {
                   "key": "limit",
                   "value": "10"
+                },
+                {
+                  "key": "sortBy",
+                  "value": "createdAt"
+                },
+                {
+                  "key": "sortOrder",
+                  "value": "desc"
                 }
               ]
             }
@@ -445,7 +461,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/posts/search?q=arquitectura&category=Arquitectura&country=M?xico&state=Jalisco&city=Guadalajara&minPrice=1000&maxPrice=5000&page=1&limit=10",
+              "raw": "{{base_url}}/posts/search?q=arquitectura&category=Arquitectura&country=M?xico&state=Jalisco&city=Guadalajara&minPrice=1000&maxPrice=5000&page=1&limit=10&sortBy=createdAt&sortOrder=desc",
               "host": [
                 "{{base_url}}"
               ],
@@ -489,6 +505,14 @@
                 {
                   "key": "limit",
                   "value": "10"
+                },
+                {
+                  "key": "sortBy",
+                  "value": "createdAt"
+                },
+                {
+                  "key": "sortOrder",
+                  "value": "desc"
                 }
               ]
             }

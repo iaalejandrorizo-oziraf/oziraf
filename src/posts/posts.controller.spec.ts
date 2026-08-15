@@ -69,12 +69,16 @@ describe('PostsController', () => {
       {
         page: 2,
         limit: 10,
+        sortBy: 'price',
+        sortOrder: 'asc',
       },
     );
 
     expect(postsService.findMine).toHaveBeenCalledWith('user-1', {
       page: 2,
       limit: 10,
+      sortBy: 'price',
+      sortOrder: 'asc',
     });
     expect(result).toBe(response);
   });

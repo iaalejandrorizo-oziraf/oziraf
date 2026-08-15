@@ -59,6 +59,8 @@ describe('PostsService', () => {
     const result = await service.findMine('user-1', {
       page: 2,
       limit: 10,
+      sortBy: 'price',
+      sortOrder: 'asc',
     });
 
     expect(prisma.post.findMany).toHaveBeenCalledWith({
@@ -81,7 +83,7 @@ describe('PostsService', () => {
       skip: 10,
       take: 10,
       orderBy: {
-        createdAt: 'desc',
+        price: 'asc',
       },
     });
     expect(prisma.post.count).toHaveBeenCalledWith({

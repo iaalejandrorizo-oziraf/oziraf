@@ -53,9 +53,9 @@ npm run start:dev
 ### Posts
 
 - `POST /posts`
-- `GET /posts?page=1&limit=10`
-- `GET /posts/me?page=1&limit=10`
-- `GET /posts/search?q=arquitectura&minPrice=1000&maxPrice=5000&page=1&limit=10`
+- `GET /posts?page=1&limit=10&sortBy=createdAt&sortOrder=desc`
+- `GET /posts/me?page=1&limit=10&sortBy=createdAt&sortOrder=desc`
+- `GET /posts/search?q=arquitectura&minPrice=1000&maxPrice=5000&page=1&limit=10&sortBy=createdAt&sortOrder=desc`
 - `GET /posts/filters`
 - `GET /posts/:id`
 - `PATCH /posts/:id`

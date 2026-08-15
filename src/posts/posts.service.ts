@@ -29,6 +29,15 @@ const postUserInclude = {
   },
 };
 
+function getPostOrderBy(options: ListPostsQueryDto = {}) {
+  const sortBy = options.sortBy ?? 'createdAt';
+  const sortOrder = options.sortOrder ?? 'desc';
+
+  return {
+    [sortBy]: sortOrder,
+  };
+}
+
 @Injectable()
 export class PostsService {
   constructor(private prisma: PrismaService) {}
@@ -51,9 +60,7 @@ export class PostsService {
         where,
         include: postUserInclude,
         ...getPagination(options),
-        orderBy: {
-          createdAt: 'desc',
-        },
+        orderBy: getPostOrderBy(options),
       }),
       this.prisma.post.count({
         where,
@@ -73,9 +80,7 @@ export class PostsService {
         where,
         include: postUserInclude,
         ...getPagination(options),
-        orderBy: {
-          createdAt: 'desc',
-        },
+        orderBy: getPostOrderBy(options),
       }),
       this.prisma.post.count({
         where,
@@ -279,9 +284,7 @@ export class PostsService {
         where,
         include: postUserInclude,
         ...getPagination(filters),
-        orderBy: {
-          createdAt: 'desc',
-        },
+        orderBy: getPostOrderBy(filters),
       }),
       this.prisma.post.count({
         where,

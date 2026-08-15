@@ -7,6 +7,8 @@ describe('ListPostsQueryDto', () => {
     const dto = plainToInstance(ListPostsQueryDto, {
       page: '2',
       limit: '10',
+      sortBy: 'price',
+      sortOrder: 'asc',
     });
 
     const errors = await validate(dto);
@@ -14,6 +16,8 @@ describe('ListPostsQueryDto', () => {
     expect(errors).toHaveLength(0);
     expect(dto.page).toBe(2);
     expect(dto.limit).toBe(10);
+    expect(dto.sortBy).toBe('price');
+    expect(dto.sortOrder).toBe('asc');
   });
 
   it('rejects invalid pagination values', async () => {
@@ -26,5 +30,17 @@ describe('ListPostsQueryDto', () => {
     const properties = errors.map((error) => error.property);
 
     expect(properties).toEqual(expect.arrayContaining(['page', 'limit']));
+  });
+
+  it('rejects invalid sorting values', async () => {
+    const dto = plainToInstance(ListPostsQueryDto, {
+      sortBy: 'title',
+      sortOrder: 'newest',
+    });
+
+    const errors = await validate(dto);
+    const properties = errors.map((error) => error.property);
+
+    expect(properties).toEqual(expect.arrayContaining(['sortBy', 'sortOrder']));
   });
 });
