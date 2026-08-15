@@ -14,6 +14,7 @@ import {
 import { CreatePostDto } from './dto/create-post.dto';
 import { ListPostsQueryDto } from './dto/list-posts-query.dto';
 import { SearchPostsQueryDto } from './dto/search-posts-query.dto';
+import { UpdatePostStatusDto } from './dto/update-post-status.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
 
 const postUserInclude = {
@@ -77,6 +78,9 @@ export class PostsService {
   async findMine(userId: string, options?: ListPostsQueryDto) {
     const where: Prisma.PostWhereInput = {
       userId,
+      status: {
+        not: 'DELETED',
+      },
     };
     const [posts, total] = await Promise.all([
       this.prisma.post.findMany({
@@ -192,6 +196,37 @@ export class PostsService {
         id,
       },
       data,
+    });
+  }
+
+  async updateStatus(
+    id: string,
+    userId: string,
+    updatePostStatusDto: UpdatePostStatusDto,
+  ) {
+    const post = await this.prisma.post.findUnique({
+      where: {
+        id,
+      },
+    });
+
+    if (!post || post.status === 'DELETED') {
+      throw new NotFoundException('La publicación no existe');
+    }
+
+    if (post.userId !== userId) {
+      throw new ForbiddenException(
+        'No tienes permiso para cambiar el estado de esta publicación',
+      );
+    }
+
+    return this.prisma.post.update({
+      where: {
+        id,
+      },
+      data: {
+        status: updatePostStatusDto.status,
+      },
     });
   }
 

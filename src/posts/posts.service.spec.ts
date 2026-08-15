@@ -70,6 +70,9 @@ describe('PostsService', () => {
     expect(prisma.post.findMany).toHaveBeenCalledWith({
       where: {
         userId: 'user-1',
+        status: {
+          not: 'DELETED',
+        },
       },
       include: {
         user: {
@@ -93,6 +96,9 @@ describe('PostsService', () => {
     expect(prisma.post.count).toHaveBeenCalledWith({
       where: {
         userId: 'user-1',
+        status: {
+          not: 'DELETED',
+        },
       },
     });
     expect(result).toEqual({
@@ -338,6 +344,62 @@ describe('PostsService', () => {
     await expect(
       service.update('post-1', 'user-1', {
         title: 'Servicio actualizado',
+      }),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+  });
+
+  it('updates a post status when it belongs to the user', async () => {
+    const existingPost = {
+      id: 'post-1',
+      status: 'ACTIVE',
+      userId: 'user-1',
+    };
+    const updatedPost = {
+      ...existingPost,
+      status: 'INACTIVE',
+    };
+    prisma.post.findUnique.mockResolvedValue(existingPost);
+    prisma.post.update.mockResolvedValue(updatedPost);
+
+    const result = await service.updateStatus('post-1', 'user-1', {
+      status: 'INACTIVE',
+    });
+
+    expect(prisma.post.update).toHaveBeenCalledWith({
+      where: {
+        id: 'post-1',
+      },
+      data: {
+        status: 'INACTIVE',
+      },
+    });
+    expect(result).toBe(updatedPost);
+  });
+
+  it('rejects status updates for deleted posts', async () => {
+    prisma.post.findUnique.mockResolvedValue({
+      id: 'post-1',
+      status: 'DELETED',
+      userId: 'user-1',
+    });
+
+    await expect(
+      service.updateStatus('post-1', 'user-1', {
+        status: 'ACTIVE',
+      }),
+    ).rejects.toBeInstanceOf(NotFoundException);
+  });
+
+  it('rejects status updates from users who do not own the post', async () => {
+    prisma.post.findUnique.mockResolvedValue({
+      id: 'post-1',
+      status: 'ACTIVE',
+      userId: 'owner-1',
+    });
+
+    await expect(
+      service.updateStatus('post-1', 'user-1', {
+        status: 'INACTIVE',
       }),
     ).rejects.toBeInstanceOf(ForbiddenException);
   });

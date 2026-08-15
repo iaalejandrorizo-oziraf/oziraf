@@ -15,6 +15,7 @@ import { PostsService } from './posts.service';
 import { CreatePostDto } from './dto/create-post.dto';
 import { ListPostsQueryDto } from './dto/list-posts-query.dto';
 import { SearchPostsQueryDto } from './dto/search-posts-query.dto';
+import { UpdatePostStatusDto } from './dto/update-post-status.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
@@ -52,6 +53,20 @@ export class PostsController {
   @Get(':id')
   async findOne(@Param('id') id: string) {
     return this.postsService.findOne(id);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Patch(':id/status')
+  async updateStatus(
+    @Param('id') id: string,
+    @Request() req,
+    @Body() updatePostStatusDto: UpdatePostStatusDto,
+  ) {
+    return this.postsService.updateStatus(
+      id,
+      req.user.userId,
+      updatePostStatusDto,
+    );
   }
 
   @UseGuards(JwtAuthGuard)

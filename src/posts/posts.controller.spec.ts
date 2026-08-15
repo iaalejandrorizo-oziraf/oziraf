@@ -11,6 +11,7 @@ describe('PostsController', () => {
     findMine: jest.Mock;
     findOne: jest.Mock;
     update: jest.Mock;
+    updateStatus: jest.Mock;
     remove: jest.Mock;
     search: jest.Mock;
   };
@@ -23,6 +24,7 @@ describe('PostsController', () => {
       findMine: jest.fn(),
       findOne: jest.fn(),
       update: jest.fn(),
+      updateStatus: jest.fn(),
       remove: jest.fn(),
       search: jest.fn(),
     };
@@ -173,6 +175,36 @@ describe('PostsController', () => {
     expect(postsService.update).toHaveBeenCalledWith('post-1', 'user-1', {
       title: 'Servicio actualizado',
     });
+    expect(result).toBe(post);
+  });
+
+  it('updates a post status for the authenticated user', async () => {
+    const post = {
+      id: 'post-1',
+      status: 'INACTIVE',
+      userId: 'user-1',
+    };
+    postsService.updateStatus.mockResolvedValue(post);
+
+    const result = await controller.updateStatus(
+      'post-1',
+      {
+        user: {
+          userId: 'user-1',
+        },
+      },
+      {
+        status: 'INACTIVE',
+      },
+    );
+
+    expect(postsService.updateStatus).toHaveBeenCalledWith(
+      'post-1',
+      'user-1',
+      {
+        status: 'INACTIVE',
+      },
+    );
     expect(result).toBe(post);
   });
 });
