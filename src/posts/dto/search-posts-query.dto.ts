@@ -1,4 +1,11 @@
-import { IsOptional, IsString, MaxLength } from 'class-validator';
+import { Transform } from 'class-transformer';
+import {
+  IsNumber,
+  IsOptional,
+  IsPositive,
+  IsString,
+  MaxLength,
+} from 'class-validator';
 import { Trim } from '../../common/decorators/trim.decorator';
 import { ListPostsQueryDto } from './list-posts-query.dto';
 
@@ -32,4 +39,16 @@ export class SearchPostsQueryDto extends ListPostsQueryDto {
   @IsString()
   @MaxLength(80)
   city?: string;
+
+  @IsOptional()
+  @Transform(({ value }) => Number(value))
+  @IsNumber()
+  @IsPositive()
+  minPrice?: number;
+
+  @IsOptional()
+  @Transform(({ value }) => Number(value))
+  @IsNumber()
+  @IsPositive()
+  maxPrice?: number;
 }

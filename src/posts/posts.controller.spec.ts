@@ -114,6 +114,8 @@ describe('PostsController', () => {
     const result = await controller.search({
       q: 'arquitectura',
       city: 'Guadalajara',
+      minPrice: 1000,
+      maxPrice: 3000,
       page: 2,
       limit: 10,
     });
@@ -121,6 +123,8 @@ describe('PostsController', () => {
     expect(postsService.search).toHaveBeenCalledWith({
       q: 'arquitectura',
       city: 'Guadalajara',
+      minPrice: 1000,
+      maxPrice: 3000,
       page: 2,
       limit: 10,
     });

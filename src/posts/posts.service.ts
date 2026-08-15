@@ -212,7 +212,7 @@ export class PostsService {
     });
   }
   async search(filters: SearchPostsQueryDto) {
-    const { q, category, country, state, city } = filters;
+    const { q, category, country, state, city, minPrice, maxPrice } = filters;
 
     const where: Prisma.PostWhereInput = {
       status: 'ACTIVE',
@@ -242,6 +242,17 @@ export class PostsService {
         city: {
           contains: city,
           mode: 'insensitive',
+        },
+      }),
+
+      ...((minPrice || maxPrice) && {
+        price: {
+          ...(minPrice && {
+            gte: minPrice,
+          }),
+          ...(maxPrice && {
+            lte: maxPrice,
+          }),
         },
       }),
 

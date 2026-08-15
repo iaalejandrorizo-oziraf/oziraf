@@ -445,7 +445,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/posts/search?q=arquitectura&category=Arquitectura&country=México&state=Jalisco&city=Guadalajara&page=1&limit=10",
+              "raw": "{{base_url}}/posts/search?q=arquitectura&category=Arquitectura&country=M?xico&state=Jalisco&city=Guadalajara&minPrice=1000&maxPrice=5000&page=1&limit=10",
               "host": [
                 "{{base_url}}"
               ],
@@ -473,6 +473,14 @@
                 {
                   "key": "city",
                   "value": "Guadalajara"
+                },
+                {
+                  "key": "minPrice",
+                  "value": "1000"
+                },
+                {
+                  "key": "maxPrice",
+                  "value": "5000"
                 },
                 {
                   "key": "page",

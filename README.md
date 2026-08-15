@@ -55,7 +55,7 @@ npm run start:dev
 - `POST /posts`
 - `GET /posts?page=1&limit=10`
 - `GET /posts/me?page=1&limit=10`
-- `GET /posts/search?q=arquitectura&page=1&limit=10`
+- `GET /posts/search?q=arquitectura&minPrice=1000&maxPrice=5000&page=1&limit=10`
 - `GET /posts/filters`
 - `GET /posts/:id`
 - `PATCH /posts/:id`

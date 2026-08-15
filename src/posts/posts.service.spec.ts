@@ -151,6 +151,8 @@ describe('PostsService', () => {
     const result = await service.search({
       q: 'arquitectura',
       city: 'Guadalajara',
+      minPrice: 1000,
+      maxPrice: 3000,
       page: 1,
       limit: 10,
     });
@@ -161,6 +163,10 @@ describe('PostsService', () => {
         city: {
           contains: 'Guadalajara',
           mode: 'insensitive',
+        },
+        price: {
+          gte: 1000,
+          lte: 3000,
         },
       }),
     });
