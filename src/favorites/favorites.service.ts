@@ -22,7 +22,7 @@ export class FavoritesService {
       },
     });
 
-    if (!post) {
+    if (!post || post.status !== 'ACTIVE') {
       throw new NotFoundException('La publicación no existe');
     }
 
