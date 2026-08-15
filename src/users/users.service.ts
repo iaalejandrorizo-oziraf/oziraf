@@ -60,6 +60,26 @@ export class UsersService {
     });
   }
 
+  async findPrivateById(id: string) {
+    return this.prisma.user.findUnique({
+      where: {
+        id,
+      },
+    });
+  }
+
+  async updatePassword(id: string, password: string) {
+    return this.prisma.user.update({
+      where: {
+        id,
+      },
+      data: {
+        password,
+      },
+      select: publicUserSelect,
+    });
+  }
+
   async updateProfile(
     id: string,
     data: {

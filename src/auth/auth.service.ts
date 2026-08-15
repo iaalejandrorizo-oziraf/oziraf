@@ -7,6 +7,7 @@ import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../users/users.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
 import * as bcrypt from 'bcrypt';
 
 @Injectable()
@@ -65,5 +66,29 @@ export class AuthService {
     return {
       access_token: await this.jwtService.signAsync(payload),
     };
+  }
+
+  async changePassword(userId: string, changePasswordDto: ChangePasswordDto) {
+    const user = await this.usersService.findPrivateById(userId);
+
+    if (!user) {
+      throw new UnauthorizedException('Usuario no autenticado');
+    }
+
+    const currentPasswordValid = await bcrypt.compare(
+      changePasswordDto.currentPassword,
+      user.password,
+    );
+
+    if (!currentPasswordValid) {
+      throw new UnauthorizedException('La contraseña actual es incorrecta');
+    }
+
+    const hashedPassword = await bcrypt.hash(
+      changePasswordDto.newPassword,
+      10,
+    );
+
+    return this.usersService.updatePassword(userId, hashedPassword);
   }
 }

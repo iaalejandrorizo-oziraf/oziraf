@@ -153,6 +153,57 @@
               }
             }
           ]
+        },
+        {
+          "name": "Change password",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"currentPassword\": \"Password123\",\n  \"newPassword\": \"Password123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/password",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "password"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Password change is handled', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json()).to.not.have.property('password');",
+                  "});"
+                ]
+              }
+            }
+          ]
         }
       ]
     },

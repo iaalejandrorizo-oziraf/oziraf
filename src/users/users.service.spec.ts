@@ -128,4 +128,38 @@ describe('UsersService', () => {
     });
     expect(result).not.toHaveProperty('password');
   });
+
+  it('finds private users by id with password available', async () => {
+    const privateUser = {
+      ...publicUser,
+      password: 'hashed-password',
+    };
+    prisma.user.findUnique.mockResolvedValue(privateUser);
+
+    const result = await service.findPrivateById('user-1');
+
+    expect(prisma.user.findUnique).toHaveBeenCalledWith({
+      where: {
+        id: 'user-1',
+      },
+    });
+    expect(result).toHaveProperty('password');
+  });
+
+  it('updates passwords with the public user selection', async () => {
+    prisma.user.update.mockResolvedValue(publicUser);
+
+    const result = await service.updatePassword('user-1', 'new-hash');
+
+    expect(prisma.user.update).toHaveBeenCalledWith({
+      where: {
+        id: 'user-1',
+      },
+      data: {
+        password: 'new-hash',
+      },
+      select: publicUserSelect,
+    });
+    expect(result).not.toHaveProperty('password');
+  });
 });

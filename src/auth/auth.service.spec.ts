@@ -2,18 +2,23 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { JwtService } from '@nestjs/jwt';
 import { AuthService } from './auth.service';
 import { UsersService } from '../users/users.service';
+import * as bcrypt from 'bcrypt';
 
 describe('AuthService', () => {
   let service: AuthService;
   let usersService: {
     create: jest.Mock;
     findByEmail: jest.Mock;
+    findPrivateById: jest.Mock;
+    updatePassword: jest.Mock;
   };
 
   beforeEach(async () => {
     usersService = {
       create: jest.fn(),
       findByEmail: jest.fn(),
+      findPrivateById: jest.fn(),
+      updatePassword: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -85,5 +90,28 @@ describe('AuthService', () => {
     expect(usersService.create.mock.calls[0][0].password).not.toBe(
       'Password123',
     );
+  });
+
+  it('changes passwords without returning a password', async () => {
+    usersService.findPrivateById.mockResolvedValue({
+      id: 'user-1',
+      password: await bcrypt.hash('Password123', 10),
+    });
+    usersService.updatePassword.mockResolvedValue({
+      id: 'user-1',
+      email: 'user@example.com',
+      firstName: 'Alejandro',
+    });
+
+    const result = await service.changePassword('user-1', {
+      currentPassword: 'Password123',
+      newPassword: 'NewPassword123',
+    });
+
+    expect(usersService.updatePassword).toHaveBeenCalledWith(
+      'user-1',
+      expect.any(String),
+    );
+    expect(result).not.toHaveProperty('password');
   });
 });
