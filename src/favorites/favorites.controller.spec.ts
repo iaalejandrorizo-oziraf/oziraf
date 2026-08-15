@@ -60,4 +60,33 @@ describe('FavoritesController', () => {
       isFavorite: true,
     });
   });
+
+  it('returns favorites for the authenticated user with pagination', async () => {
+    const favorites = [
+      {
+        id: 'favorite-id',
+        userId: 'user-id',
+        postId: 'post-id',
+      },
+    ];
+    favoritesService.findAll.mockResolvedValue(favorites);
+
+    const result = await controller.findAll(
+      {
+        user: {
+          userId: 'user-id',
+        },
+      },
+      {
+        page: 2,
+        limit: 10,
+      },
+    );
+
+    expect(favoritesService.findAll).toHaveBeenCalledWith('user-id', {
+      page: 2,
+      limit: 10,
+    });
+    expect(result).toBe(favorites);
+  });
 });

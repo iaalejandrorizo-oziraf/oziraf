@@ -5,6 +5,17 @@ import {
 } from '@nestjs/common';
 
 import { PrismaService } from '../prisma/prisma.service';
+import { ListFavoritesQueryDto } from './dto/list-favorites-query.dto';
+
+function getPagination(options: ListFavoritesQueryDto = {}) {
+  const page = Math.max(options.page ?? 1, 1);
+  const limit = Math.min(Math.max(options.limit ?? 20, 1), 50);
+
+  return {
+    skip: (page - 1) * limit,
+    take: limit,
+  };
+}
 
 @Injectable()
 export class FavoritesService {
@@ -84,7 +95,7 @@ export class FavoritesService {
     };
   }
 
-  async findAll(userId: string) {
+  async findAll(userId: string, options?: ListFavoritesQueryDto) {
     return this.prisma.favorite.findMany({
       where: {
         userId,
@@ -106,6 +117,7 @@ export class FavoritesService {
           },
         },
       },
+      ...getPagination(options),
       orderBy: {
         createdAt: 'desc',
       },

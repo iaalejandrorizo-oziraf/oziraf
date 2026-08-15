@@ -4,12 +4,14 @@ import {
   Get,
   Param,
   Post,
+  Query,
   Request,
   UseGuards,
 } from '@nestjs/common';
 
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { FavoriteParamDto } from './dto/favorite-param.dto';
+import { ListFavoritesQueryDto } from './dto/list-favorites-query.dto';
 import { FavoritesService } from './favorites.service';
 
 @UseGuards(JwtAuthGuard)
@@ -33,7 +35,7 @@ export class FavoritesController {
   }
 
   @Get()
-  async findAll(@Request() req) {
-    return this.favoritesService.findAll(req.user.userId);
+  async findAll(@Request() req, @Query() query: ListFavoritesQueryDto) {
+    return this.favoritesService.findAll(req.user.userId, query);
   }
 }

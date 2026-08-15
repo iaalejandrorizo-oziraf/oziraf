@@ -741,12 +741,22 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/favorites",
+              "raw": "{{base_url}}/favorites?page=1&limit=10",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "favorites"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
               ]
             }
           },

@@ -127,4 +127,39 @@ describe('FavoritesService', () => {
       isFavorite: false,
     });
   });
+
+  it('finds favorites with default pagination', async () => {
+    prisma.favorite.findMany.mockResolvedValue([]);
+
+    const result = await service.findAll('user-id');
+
+    expect(prisma.favorite.findMany).toHaveBeenCalledWith({
+      where: {
+        userId: 'user-id',
+      },
+      include: {
+        post: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                profession: true,
+                city: true,
+                state: true,
+                profilePhoto: true,
+              },
+            },
+          },
+        },
+      },
+      skip: 0,
+      take: 20,
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+    expect(result).toEqual([]);
+  });
 });
