@@ -18,6 +18,8 @@ JWT_SECRET="your-secret"
 PORT=3000
 ```
 
+The API applies a broad global rate limit and stricter limits to sensitive auth actions such as login, registration, password reset and email verification.
+
 ## Setup
 
 ```bash

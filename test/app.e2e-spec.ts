@@ -38,6 +38,28 @@ describe('AppController (e2e)', () => {
       });
   });
 
+  it('/auth/login is rate limited', async () => {
+    const server = app.getHttpServer();
+
+    for (let attempt = 0; attempt < 10; attempt += 1) {
+      await request(server)
+        .post('/auth/login')
+        .send({
+          email: `missing-${attempt}@example.com`,
+          password: 'Password123',
+        })
+        .expect(401);
+    }
+
+    await request(server)
+      .post('/auth/login')
+      .send({
+        email: 'missing-final@example.com',
+        password: 'Password123',
+      })
+      .expect(429);
+  });
+
   afterEach(async () => {
     await app.close();
   });

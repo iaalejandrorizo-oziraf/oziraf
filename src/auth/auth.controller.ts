@@ -7,6 +7,7 @@ import {
   Request,
   UseGuards,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
@@ -22,16 +23,19 @@ export class AuthController {
   constructor(private authService: AuthService) {}
 
   @Post('register')
+  @Throttle({ default: { ttl: 60_000, limit: 5 } })
   register(@Body() registerDto: RegisterDto) {
     return this.authService.register(registerDto);
   }
 
   @Post('login')
+  @Throttle({ default: { ttl: 60_000, limit: 10 } })
   login(@Body() loginDto: LoginDto) {
     return this.authService.login(loginDto);
   }
 
   @Post('password-reset/request')
+  @Throttle({ default: { ttl: 60_000, limit: 3 } })
   requestPasswordReset(
     @Body() requestPasswordResetDto: RequestPasswordResetDto,
   ) {
@@ -39,6 +43,7 @@ export class AuthController {
   }
 
   @Post('password-reset/confirm')
+  @Throttle({ default: { ttl: 60_000, limit: 5 } })
   confirmPasswordReset(
     @Body() confirmPasswordResetDto: ConfirmPasswordResetDto,
   ) {
@@ -47,11 +52,13 @@ export class AuthController {
 
   @UseGuards(JwtAuthGuard)
   @Post('email-verification/request')
+  @Throttle({ default: { ttl: 60_000, limit: 3 } })
   requestEmailVerification(@Request() req) {
     return this.authService.requestEmailVerification(req.user.userId);
   }
 
   @Post('email-verification/confirm')
+  @Throttle({ default: { ttl: 60_000, limit: 5 } })
   confirmEmailVerification(
     @Body() confirmEmailVerificationDto: ConfirmEmailVerificationDto,
   ) {
