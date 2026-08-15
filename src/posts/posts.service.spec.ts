@@ -173,6 +173,35 @@ describe('PostsService', () => {
     });
   });
 
+  it('returns available filters from active posts', async () => {
+    prisma.post.findMany
+      .mockResolvedValueOnce([{ category: 'Arquitectura' }])
+      .mockResolvedValueOnce([{ country: 'Mexico' }])
+      .mockResolvedValueOnce([{ state: 'Jalisco' }])
+      .mockResolvedValueOnce([{ city: 'Guadalajara' }]);
+
+    const result = await service.findFilters();
+
+    expect(prisma.post.findMany).toHaveBeenNthCalledWith(1, {
+      where: {
+        status: 'ACTIVE',
+      },
+      distinct: ['category'],
+      select: {
+        category: true,
+      },
+      orderBy: {
+        category: 'asc',
+      },
+    });
+    expect(result).toEqual({
+      categories: ['Arquitectura'],
+      countries: ['Mexico'],
+      states: ['Jalisco'],
+      cities: ['Guadalajara'],
+    });
+  });
+
   it('finds one post by id', async () => {
     const post = {
       id: 'post-1',

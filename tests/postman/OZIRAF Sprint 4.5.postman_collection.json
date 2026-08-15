@@ -507,6 +507,42 @@
           ]
         },
         {
+          "name": "Filters",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/posts/filters",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "posts",
+                "filters"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Post filters are returned', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.categories).to.be.an('array');",
+                  "  pm.expect(json.countries).to.be.an('array');",
+                  "  pm.expect(json.states).to.be.an('array');",
+                  "  pm.expect(json.cities).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
           "name": "Get by id",
           "request": {
             "method": "GET",

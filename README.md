@@ -56,6 +56,7 @@ npm run start:dev
 - `GET /posts?page=1&limit=10`
 - `GET /posts/me?page=1&limit=10`
 - `GET /posts/search?q=arquitectura&page=1&limit=10`
+- `GET /posts/filters`
 - `GET /posts/:id`
 - `PATCH /posts/:id`
 - `DELETE /posts/:id`

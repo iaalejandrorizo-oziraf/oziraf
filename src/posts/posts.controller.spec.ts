@@ -7,6 +7,7 @@ describe('PostsController', () => {
   let postsService: {
     create: jest.Mock;
     findAll: jest.Mock;
+    findFilters: jest.Mock;
     findMine: jest.Mock;
     findOne: jest.Mock;
     update: jest.Mock;
@@ -18,6 +19,7 @@ describe('PostsController', () => {
     postsService = {
       create: jest.fn(),
       findAll: jest.fn(),
+      findFilters: jest.fn(),
       findMine: jest.fn(),
       findOne: jest.fn(),
       update: jest.fn(),
@@ -123,6 +125,21 @@ describe('PostsController', () => {
       limit: 10,
     });
     expect(result).toBe(response);
+  });
+
+  it('returns available post filters', async () => {
+    const filters = {
+      categories: ['Arquitectura'],
+      countries: ['Mexico'],
+      states: ['Jalisco'],
+      cities: ['Guadalajara'],
+    };
+    postsService.findFilters.mockResolvedValue(filters);
+
+    const result = await controller.findFilters();
+
+    expect(postsService.findFilters).toHaveBeenCalled();
+    expect(result).toBe(filters);
   });
 
   it('updates a post with partial data for the authenticated user', async () => {

@@ -85,6 +85,66 @@ export class PostsService {
     return buildPaginatedResponse(posts, total, options);
   }
 
+  async findFilters() {
+    const [categories, countries, states, cities] = await Promise.all([
+      this.prisma.post.findMany({
+        where: {
+          status: 'ACTIVE',
+        },
+        distinct: ['category'],
+        select: {
+          category: true,
+        },
+        orderBy: {
+          category: 'asc',
+        },
+      }),
+      this.prisma.post.findMany({
+        where: {
+          status: 'ACTIVE',
+        },
+        distinct: ['country'],
+        select: {
+          country: true,
+        },
+        orderBy: {
+          country: 'asc',
+        },
+      }),
+      this.prisma.post.findMany({
+        where: {
+          status: 'ACTIVE',
+        },
+        distinct: ['state'],
+        select: {
+          state: true,
+        },
+        orderBy: {
+          state: 'asc',
+        },
+      }),
+      this.prisma.post.findMany({
+        where: {
+          status: 'ACTIVE',
+        },
+        distinct: ['city'],
+        select: {
+          city: true,
+        },
+        orderBy: {
+          city: 'asc',
+        },
+      }),
+    ]);
+
+    return {
+      categories: categories.map((post) => post.category),
+      countries: countries.map((post) => post.country),
+      states: states.map((post) => post.state),
+      cities: cities.map((post) => post.city),
+    };
+  }
+
   // Obtener una publicación por ID
   async findOne(id: string) {
     const post = await this.prisma.post.findUnique({

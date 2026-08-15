@@ -44,6 +44,11 @@ export class PostsController {
     return this.postsService.findMine(req.user.userId, query);
   }
 
+  @Get('filters')
+  async findFilters() {
+    return this.postsService.findFilters();
+  }
+
   @Get(':id')
   async findOne(@Param('id') id: string) {
     return this.postsService.findOne(id);
