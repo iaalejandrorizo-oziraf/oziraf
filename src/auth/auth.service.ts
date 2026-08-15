@@ -48,6 +48,10 @@ export class AuthService {
       throw new UnauthorizedException('Correo o contraseña incorrectos');
     }
 
+    if (user.status !== 'ACTIVE') {
+      throw new UnauthorizedException('La cuenta no está activa');
+    }
+
     const passwordValid = await bcrypt.compare(
       loginDto.password,
       user.password,

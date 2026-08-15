@@ -114,4 +114,20 @@ describe('AuthService', () => {
     );
     expect(result).not.toHaveProperty('password');
   });
+
+  it('rejects login for inactive users', async () => {
+    usersService.findByEmail.mockResolvedValue({
+      id: 'user-1',
+      email: 'user@example.com',
+      password: await bcrypt.hash('Password123', 10),
+      status: 'SUSPENDED',
+    });
+
+    await expect(
+      service.login({
+        email: 'user@example.com',
+        password: 'Password123',
+      }),
+    ).rejects.toThrow('La cuenta no está activa');
+  });
 });
