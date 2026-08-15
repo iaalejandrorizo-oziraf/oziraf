@@ -16,6 +16,7 @@ Create a `.env` file with:
 DATABASE_URL="postgresql://USER:PASSWORD@HOST:PORT/DATABASE"
 JWT_SECRET="your-secret"
 PORT=3000
+CORS_ORIGIN="http://localhost:5173"
 OZIRAF_ADMIN_EMAIL="admin@example.com"
 OZIRAF_ADMIN_PASSWORD="change-this-password"
 ```
