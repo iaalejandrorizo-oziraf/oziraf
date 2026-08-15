@@ -20,7 +20,11 @@ describe('AppController (e2e)', () => {
     return request(app.getHttpServer())
       .get('/')
       .expect(200)
-      .expect('Hello World!');
+      .expect({
+        name: 'OZIRAF API',
+        status: 'ok',
+        version: '4.6',
+      });
   });
 
   afterEach(async () => {
