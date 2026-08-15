@@ -7,6 +7,20 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { CreatePostDto } from './dto/create-post.dto';
 
+const postUserInclude = {
+  user: {
+    select: {
+      id: true,
+      firstName: true,
+      lastName: true,
+      profession: true,
+      city: true,
+      state: true,
+      profilePhoto: true,
+    },
+  },
+};
+
 @Injectable()
 export class PostsService {
   constructor(private prisma: PrismaService) {}
@@ -24,19 +38,20 @@ export class PostsService {
   // Obtener todas las publicaciones
   async findAll() {
     return this.prisma.post.findMany({
-      include: {
-        user: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            profession: true,
-            city: true,
-            state: true,
-            profilePhoto: true,
-          },
-        },
+      include: postUserInclude,
+      orderBy: {
+        createdAt: 'desc',
       },
+    });
+  }
+
+  // Obtener publicaciones del usuario autenticado
+  async findMine(userId: string) {
+    return this.prisma.post.findMany({
+      where: {
+        userId,
+      },
+      include: postUserInclude,
       orderBy: {
         createdAt: 'desc',
       },
@@ -49,19 +64,7 @@ export class PostsService {
       where: {
         id,
       },
-      include: {
-        user: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            profession: true,
-            city: true,
-            state: true,
-            profilePhoto: true,
-          },
-        },
-      },
+      include: postUserInclude,
     });
   }
 
@@ -174,19 +177,7 @@ export class PostsService {
         }),
       },
 
-      include: {
-        user: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            profession: true,
-            city: true,
-            state: true,
-            profilePhoto: true,
-          },
-        },
-      },
+      include: postUserInclude,
 
       orderBy: {
         createdAt: 'desc',

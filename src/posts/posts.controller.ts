@@ -47,6 +47,12 @@ export class PostsController {
     });
   }
 
+  @UseGuards(JwtAuthGuard)
+  @Get('me')
+  async findMine(@Request() req) {
+    return this.postsService.findMine(req.user.userId);
+  }
+
   @Get(':id')
   async findOne(@Param('id') id: string) {
     return this.postsService.findOne(id);

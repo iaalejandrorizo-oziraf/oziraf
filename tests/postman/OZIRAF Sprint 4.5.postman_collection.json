@@ -331,6 +331,54 @@
           ]
         },
         {
+          "name": "My posts",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/posts/me",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "posts",
+                "me"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('My posts list is returned', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json()).to.be.an('array');",
+                  "});",
+                  "",
+                  "const posts = pm.response.json();",
+                  "if (Array.isArray(posts) && posts.length > 0) {",
+                  "  pm.collectionVariables.set('post_id', posts[0].id);",
+                  "  pm.environment.set('post_id', posts[0].id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
           "name": "List",
           "request": {
             "method": "GET",
