@@ -53,6 +53,10 @@ npm run start:prod:migrate
 npm run start:dev
 ```
 
+## CI
+
+GitHub Actions validates pushes and pull requests with Prisma migrations, unit tests, build, e2e tests, dependency audit and Docker image build.
+
 ## Main Endpoints
 
 ### Health
