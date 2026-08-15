@@ -5,12 +5,14 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   Request,
   UseGuards,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { ContactsService } from './contacts.service';
 import { CreateContactLeadDto } from './dto/create-contact-lead.dto';
+import { ListContactLeadsQueryDto } from './dto/list-contact-leads-query.dto';
 import { UpdateContactLeadStatusDto } from './dto/update-contact-lead-status.dto';
 
 @UseGuards(JwtAuthGuard)
@@ -32,8 +34,11 @@ export class ContactsController {
   }
 
   @Get('leads')
-  async findReceived(@Request() req) {
-    return this.contactsService.findReceived(req.user.userId);
+  async findReceived(
+    @Request() req,
+    @Query() query: ListContactLeadsQueryDto,
+  ) {
+    return this.contactsService.findReceived(req.user.userId, query);
   }
 
   @Patch('leads/:id/status')

@@ -1095,13 +1095,27 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/contacts/leads",
+              "raw": "{{base_url}}/contacts/leads?page=1&limit=10&status=NEW",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "contacts",
                 "leads"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                },
+                {
+                  "key": "status",
+                  "value": "NEW"
+                }
               ]
             }
           },
@@ -1112,10 +1126,21 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('Received leads are returned', function () {",
+                  "pm.test('Received leads page is returned', function () {",
                   "  pm.response.to.have.status(200);",
-                  "  pm.expect(pm.response.json()).to.be.an('array');",
-                  "});"
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.data).to.be.an('array');",
+                  "  pm.expect(json.page).to.be.a('number');",
+                  "  pm.expect(json.limit).to.be.a('number');",
+                  "  pm.expect(json.total).to.be.a('number');",
+                  "  pm.expect(json.totalPages).to.be.a('number');",
+                  "});",
+                  "",
+                  "const leads = pm.response.json().data;",
+                  "if (Array.isArray(leads) && leads.length > 0) {",
+                  "  pm.collectionVariables.set('lead_id', leads[0].id);",
+                  "  pm.environment.set('lead_id', leads[0].id);",
+                  "}"
                 ]
               }
             }

@@ -11,6 +11,7 @@ describe('ContactsService', () => {
   let service: ContactsService;
   let prisma: {
     contactLead: {
+      count: jest.Mock;
       create: jest.Mock;
       findMany: jest.Mock;
       findUnique: jest.Mock;
@@ -24,6 +25,7 @@ describe('ContactsService', () => {
   beforeEach(async () => {
     prisma = {
       contactLead: {
+        count: jest.fn(),
         create: jest.fn(),
         findMany: jest.fn(),
         findUnique: jest.fn(),
@@ -118,19 +120,39 @@ describe('ContactsService', () => {
       },
     ];
     prisma.contactLead.findMany.mockResolvedValue(leads);
+    prisma.contactLead.count.mockResolvedValue(1);
 
-    const result = await service.findReceived('owner-id');
+    const result = await service.findReceived('owner-id', {
+      page: 2,
+      limit: 10,
+      status: 'NEW',
+    });
 
     expect(prisma.contactLead.findMany).toHaveBeenCalledWith({
       where: {
         ownerId: 'owner-id',
+        status: 'NEW',
       },
       include: expect.any(Object),
+      skip: 10,
+      take: 10,
       orderBy: {
         createdAt: 'desc',
       },
     });
-    expect(result).toBe(leads);
+    expect(prisma.contactLead.count).toHaveBeenCalledWith({
+      where: {
+        ownerId: 'owner-id',
+        status: 'NEW',
+      },
+    });
+    expect(result).toEqual({
+      data: leads,
+      page: 2,
+      limit: 10,
+      total: 1,
+      totalPages: 1,
+    });
   });
 
   it('updates a received lead status for the owner', async () => {

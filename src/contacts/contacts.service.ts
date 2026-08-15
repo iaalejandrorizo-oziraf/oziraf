@@ -4,8 +4,14 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
+import {
+  buildPaginatedResponse,
+  getPagination,
+} from '../common/utils/pagination.util';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateContactLeadDto } from './dto/create-contact-lead.dto';
+import { ListContactLeadsQueryDto } from './dto/list-contact-leads-query.dto';
 import { UpdateContactLeadStatusDto } from './dto/update-contact-lead-status.dto';
 
 @Injectable()
@@ -49,27 +55,40 @@ export class ContactsService {
     });
   }
 
-  async findReceived(ownerId: string) {
-    return this.prisma.contactLead.findMany({
-      where: {
-        ownerId,
-      },
-      include: {
-        post: true,
-        sender: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            email: true,
-            phone: true,
+  async findReceived(ownerId: string, options?: ListContactLeadsQueryDto) {
+    const where: Prisma.ContactLeadWhereInput = {
+      ownerId,
+      ...(options?.status && {
+        status: options.status,
+      }),
+    };
+
+    const [leads, total] = await Promise.all([
+      this.prisma.contactLead.findMany({
+        where,
+        include: {
+          post: true,
+          sender: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+              phone: true,
+            },
           },
         },
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-    });
+        ...getPagination(options),
+        orderBy: {
+          createdAt: 'desc',
+        },
+      }),
+      this.prisma.contactLead.count({
+        where,
+      }),
+    ]);
+
+    return buildPaginatedResponse(leads, total, options);
   }
 
   async updateStatus(

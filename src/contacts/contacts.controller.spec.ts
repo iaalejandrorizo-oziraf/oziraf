@@ -61,22 +61,39 @@ describe('ContactsController', () => {
   });
 
   it('returns received leads for the authenticated user', async () => {
-    const leads = [
+    const response = {
+      data: [
+        {
+          id: 'lead-id',
+          ownerId: 'owner-id',
+        },
+      ],
+      page: 1,
+      limit: 10,
+      total: 1,
+      totalPages: 1,
+    };
+    contactsService.findReceived.mockResolvedValue(response);
+
+    const result = await controller.findReceived(
       {
-        id: 'lead-id',
-        ownerId: 'owner-id',
+        user: {
+          userId: 'owner-id',
+        },
       },
-    ];
-    contactsService.findReceived.mockResolvedValue(leads);
+      {
+        page: 1,
+        limit: 10,
+        status: 'NEW',
+      },
+    );
 
-    const result = await controller.findReceived({
-      user: {
-        userId: 'owner-id',
-      },
+    expect(contactsService.findReceived).toHaveBeenCalledWith('owner-id', {
+      page: 1,
+      limit: 10,
+      status: 'NEW',
     });
-
-    expect(contactsService.findReceived).toHaveBeenCalledWith('owner-id');
-    expect(result).toBe(leads);
+    expect(result).toBe(response);
   });
 
   it('updates a received lead status for the authenticated user', async () => {
