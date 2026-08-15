@@ -6,7 +6,9 @@ describe('UsersService', () => {
   let service: UsersService;
   let prisma: {
     user: {
+      count: jest.Mock;
       create: jest.Mock;
+      findMany: jest.Mock;
       findUnique: jest.Mock;
       update: jest.Mock;
     };
@@ -34,7 +36,9 @@ describe('UsersService', () => {
   beforeEach(async () => {
     prisma = {
       user: {
+        count: jest.fn(),
         create: jest.fn(),
+        findMany: jest.fn(),
         findUnique: jest.fn(),
         update: jest.fn(),
       },
@@ -107,6 +111,38 @@ describe('UsersService', () => {
     expect(result).not.toHaveProperty('password');
   });
 
+  it('finds users for admins with pagination and filters', async () => {
+    prisma.user.findMany.mockResolvedValue([publicUser]);
+    prisma.user.count.mockResolvedValue(1);
+
+    const result = await service.findAllForAdmin({
+      page: 1,
+      limit: 10,
+      status: 'ACTIVE',
+      role: 'USER',
+    });
+
+    expect(prisma.user.findMany).toHaveBeenCalledWith({
+      where: {
+        status: 'ACTIVE',
+        role: 'USER',
+      },
+      select: publicUserSelect,
+      skip: 0,
+      take: 10,
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+    expect(result).toEqual({
+      data: [publicUser],
+      page: 1,
+      limit: 10,
+      total: 1,
+      totalPages: 1,
+    });
+  });
+
   it('updates profiles with the public user selection', async () => {
     prisma.user.update.mockResolvedValue({
       ...publicUser,
@@ -157,6 +193,28 @@ describe('UsersService', () => {
       },
       data: {
         password: 'new-hash',
+      },
+      select: publicUserSelect,
+    });
+    expect(result).not.toHaveProperty('password');
+  });
+
+  it('updates user status with the public user selection', async () => {
+    prisma.user.update.mockResolvedValue({
+      ...publicUser,
+      status: 'SUSPENDED',
+    });
+
+    const result = await service.updateStatus('user-1', {
+      status: 'SUSPENDED',
+    });
+
+    expect(prisma.user.update).toHaveBeenCalledWith({
+      where: {
+        id: 'user-1',
+      },
+      data: {
+        status: 'SUSPENDED',
       },
       select: publicUserSelect,
     });

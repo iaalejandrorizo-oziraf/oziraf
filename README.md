@@ -50,6 +50,8 @@ npm run start:dev
 
 - `GET /users/profile`
 - `PATCH /users/profile`
+- `GET /users/admin?page=1&limit=10&status=ACTIVE&role=USER`
+- `PATCH /users/admin/:id/status`
 
 ### Posts
 

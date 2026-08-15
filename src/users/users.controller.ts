@@ -4,16 +4,36 @@ import {
   Patch,
   Body,
   Request,
+  Param,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 
 import { UsersService } from './users.service';
+import { AdminGuard } from '../auth/guards/admin.guard';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { ListUsersQueryDto } from './dto/list-users-query.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
+import { UpdateUserStatusDto } from './dto/update-user-status.dto';
 
 @Controller('users')
 export class UsersController {
   constructor(private usersService: UsersService) {}
+
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  @Get('admin')
+  async findAllForAdmin(@Query() query: ListUsersQueryDto) {
+    return this.usersService.findAllForAdmin(query);
+  }
+
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  @Patch('admin/:id/status')
+  async updateStatus(
+    @Param('id') id: string,
+    @Body() updateUserStatusDto: UpdateUserStatusDto,
+  ) {
+    return this.usersService.updateStatus(id, updateUserStatusDto);
+  }
 
   @UseGuards(JwtAuthGuard)
   @Get('profile')

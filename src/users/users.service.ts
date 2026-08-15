@@ -1,5 +1,12 @@
 import { Injectable } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
+import {
+  buildPaginatedResponse,
+  getPagination,
+} from '../common/utils/pagination.util';
 import { PrismaService } from '../prisma/prisma.service';
+import { ListUsersQueryDto } from './dto/list-users-query.dto';
+import { UpdateUserStatusDto } from './dto/update-user-status.dto';
 
 export const publicUserSelect = {
   id: true,
@@ -51,6 +58,33 @@ export class UsersService {
     });
   }
 
+  async findAllForAdmin(options?: ListUsersQueryDto) {
+    const where: Prisma.UserWhereInput = {
+      ...(options?.status && {
+        status: options.status,
+      }),
+      ...(options?.role && {
+        role: options.role,
+      }),
+    };
+
+    const [users, total] = await Promise.all([
+      this.prisma.user.findMany({
+        where,
+        select: publicUserSelect,
+        ...getPagination(options),
+        orderBy: {
+          createdAt: 'desc',
+        },
+      }),
+      this.prisma.user.count({
+        where,
+      }),
+    ]);
+
+    return buildPaginatedResponse(users, total, options);
+  }
+
   async findById(id: string) {
     return this.prisma.user.findUnique({
       where: {
@@ -75,6 +109,18 @@ export class UsersService {
       },
       data: {
         password,
+      },
+      select: publicUserSelect,
+    });
+  }
+
+  async updateStatus(id: string, data: UpdateUserStatusDto) {
+    return this.prisma.user.update({
+      where: {
+        id,
+      },
+      data: {
+        status: data.status,
       },
       select: publicUserSelect,
     });
