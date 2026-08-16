@@ -72,6 +72,10 @@ async function main() {
     '/users/profile',
     {
       phone: '3312345678',
+      whatsapp: '3312345678',
+      instagramUrl: 'https://instagram.com/oziraf.smoke',
+      facebookUrl: 'https://facebook.com/oziraf.smoke',
+      websiteUrl: 'https://oziraf.local/smoke',
       description: 'Proveedor validado por smoke test.',
     },
     providerToken,
@@ -80,6 +84,7 @@ async function main() {
     !Object.hasOwn(profile, 'password'),
     'Profile response leaked password',
   );
+  assert(profile.instagramUrl, 'Profile social links were not saved');
 
   const post = await api(
     'POST',
@@ -92,11 +97,18 @@ async function main() {
       state: 'Jalisco',
       city: 'Guadalajara',
       neighborhood: 'Centro',
+      address: 'Centro, Guadalajara, Jalisco',
+      latitude: 20.6767,
+      longitude: -103.3475,
+      imageUrls: [
+        'https://placehold.co/900x600/e7f0df/17211b?text=Smoke+OZIRAF',
+      ],
       price: 700,
     },
     providerToken,
   );
   assert(post.id, 'Post was not created');
+  assert(post.imageUrls?.length === 1, 'Post image URLs were not saved');
 
   await api('POST', `/favorites/${post.id}`, undefined, clientToken);
   const favoriteStatus = await api(
@@ -127,6 +139,28 @@ async function main() {
     clientToken,
   );
   assert(report.id, 'Report was not created');
+
+  const review = await api(
+    'POST',
+    `/reviews/posts/${post.id}`,
+    {
+      rating: 5,
+      comment: 'Excelente atencion de prueba.',
+    },
+    clientToken,
+  );
+  assert(review.rating === 5, 'Review was not created');
+
+  const reviews = await api(
+    'GET',
+    `/reviews/posts/${post.id}`,
+    undefined,
+    clientToken,
+  );
+  assert(
+    reviews.data.some((item) => item.id === review.id),
+    'Review list is missing review',
+  );
 
   const leads = await api(
     'GET',

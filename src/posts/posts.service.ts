@@ -30,9 +30,48 @@ const postUserInclude = {
       city: true,
       state: true,
       profilePhoto: true,
+      phone: true,
+      whatsapp: true,
+      instagramUrl: true,
+      facebookUrl: true,
+      websiteUrl: true,
+    },
+  },
+  reviews: {
+    select: {
+      rating: true,
     },
   },
 };
+
+function withRating<T extends { reviews?: { rating: number }[] }>(post: T) {
+  if (post.reviews === undefined) {
+    return post;
+  }
+
+  const reviews = post.reviews ?? [];
+  const reviewCount = reviews.length;
+  const averageRating =
+    reviewCount === 0
+      ? null
+      : Number(
+          (
+            reviews.reduce((sum, review) => sum + review.rating, 0) /
+            reviewCount
+          ).toFixed(1),
+        );
+
+  return {
+    ...post,
+    reviews: undefined,
+    averageRating,
+    reviewCount,
+  };
+}
+
+function withRatings<T extends { reviews?: { rating: number }[] }>(posts: T[]) {
+  return posts.map((post) => withRating(post));
+}
 
 function getPostOrderBy(options: ListPostsQueryDto = {}) {
   const sortBy = options.sortBy ?? 'createdAt';
@@ -49,12 +88,15 @@ export class PostsService {
 
   // Crear publicación
   async create(userId: string, createPostDto: CreatePostDto) {
-    return this.prisma.post.create({
+    const post = await this.prisma.post.create({
       data: {
         ...createPostDto,
         userId,
       },
+      include: postUserInclude,
     });
+
+    return withRating(post);
   }
 
   // Obtener todas las publicaciones
@@ -74,7 +116,7 @@ export class PostsService {
       }),
     ]);
 
-    return buildPaginatedResponse(posts, total, options);
+    return buildPaginatedResponse(withRatings(posts), total, options);
   }
 
   // Obtener publicaciones del usuario autenticado
@@ -97,7 +139,7 @@ export class PostsService {
       }),
     ]);
 
-    return buildPaginatedResponse(posts, total, options);
+    return buildPaginatedResponse(withRatings(posts), total, options);
   }
 
   async findMyStats(userId: string) {
@@ -202,7 +244,7 @@ export class PostsService {
       }),
     ]);
 
-    return buildPaginatedResponse(posts, total, options);
+    return buildPaginatedResponse(withRatings(posts), total, options);
   }
 
   // Obtener una publicación por ID
@@ -218,7 +260,7 @@ export class PostsService {
       throw new NotFoundException('La publicación no existe');
     }
 
-    return post;
+    return withRating(post);
   }
 
   // Actualizar publicación
@@ -239,12 +281,15 @@ export class PostsService {
       );
     }
 
-    return this.prisma.post.update({
+    const updated = await this.prisma.post.update({
       where: {
         id,
       },
       data,
+      include: postUserInclude,
     });
+
+    return withRating(updated);
   }
 
   async updateStatus(
@@ -268,14 +313,17 @@ export class PostsService {
       );
     }
 
-    return this.prisma.post.update({
+    const updated = await this.prisma.post.update({
       where: {
         id,
       },
       data: {
         status: updatePostStatusDto.status,
       },
+      include: postUserInclude,
     });
+
+    return withRating(updated);
   }
 
   async updateStatusForAdmin(
@@ -292,14 +340,17 @@ export class PostsService {
       throw new NotFoundException('La publicación no existe');
     }
 
-    return this.prisma.post.update({
+    const updated = await this.prisma.post.update({
       where: {
         id,
       },
       data: {
         status: adminUpdatePostStatusDto.status,
       },
+      include: postUserInclude,
     });
+
+    return withRating(updated);
   }
 
   // Eliminar publicación

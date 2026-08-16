@@ -101,6 +101,8 @@ GitHub Actions validates pushes and pull requests with Prisma migrations, unit t
 - `PATCH /posts/:id`
 - `DELETE /posts/:id`
 
+Posts support service address, latitude, longitude and up to 6 image URLs.
+
 ### Favorites
 
 - `POST /favorites/:postId`
@@ -120,6 +122,11 @@ GitHub Actions validates pushes and pull requests with Prisma migrations, unit t
 - `GET /reports/me`
 - `GET /reports/admin?page=1&limit=10&status=OPEN`
 - `PATCH /reports/admin/:id/status`
+
+### Reviews
+
+- `POST /reviews/posts/:postId`
+- `GET /reviews/posts/:postId?page=1&limit=10`
 
 ## Postman
 
@@ -146,8 +153,9 @@ The API uses a global validation pipe with:
 - DTO validation enabled
 - query/body transformation enabled
 
-Current protections include trimmed text input, length limits, valid profile photo URLs, positive prices, paginated listings, password reset tokens, email verification tokens and public user responses without passwords.
+Current protections include trimmed text input, length limits, valid profile/social URLs, positive prices, bounded service photo arrays, paginated listings, password reset tokens, email verification tokens and public user responses without passwords.
 Public post listings return only active posts. Users can pause and reactivate their own posts with `ACTIVE` and `INACTIVE`. Deleting a post marks it as `DELETED` instead of removing the row. Users cannot add their own posts to favorites or contact their own posts.
+Users can review active posts once, with ratings from 1 to 5, and cannot review their own posts.
 
 ## Smoke Test
 

@@ -74,4 +74,31 @@ export class RegisterDto {
   @IsUrl({ require_protocol: true })
   @MaxLength(500)
   profilePhoto?: string;
+
+  @IsOptional()
+  @Trim()
+  @IsString()
+  @MaxLength(30)
+  whatsapp?: string;
+
+  @IsOptional()
+  @Trim()
+  @IsString()
+  @IsUrl({ require_protocol: true })
+  @MaxLength(500)
+  instagramUrl?: string;
+
+  @IsOptional()
+  @Trim()
+  @IsString()
+  @IsUrl({ require_protocol: true })
+  @MaxLength(500)
+  facebookUrl?: string;
+
+  @IsOptional()
+  @Trim()
+  @IsString()
+  @IsUrl({ require_protocol: true })
+  @MaxLength(500)
+  websiteUrl?: string;
 }

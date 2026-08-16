@@ -20,6 +20,30 @@ describe('PostsService', () => {
     };
   };
 
+  const expectedPostInclude = {
+    user: {
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        profession: true,
+        city: true,
+        state: true,
+        profilePhoto: true,
+        phone: true,
+        whatsapp: true,
+        instagramUrl: true,
+        facebookUrl: true,
+        websiteUrl: true,
+      },
+    },
+    reviews: {
+      select: {
+        rating: true,
+      },
+    },
+  };
+
   beforeEach(async () => {
     prisma = {
       post: {
@@ -73,19 +97,7 @@ describe('PostsService', () => {
         userId: 'user-1',
         status: 'INACTIVE',
       },
-      include: {
-        user: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            profession: true,
-            city: true,
-            state: true,
-            profilePhoto: true,
-          },
-        },
-      },
+      include: expectedPostInclude,
       skip: 10,
       take: 10,
       orderBy: {
@@ -117,19 +129,7 @@ describe('PostsService', () => {
       where: {
         status: 'ACTIVE',
       },
-      include: {
-        user: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            profession: true,
-            city: true,
-            state: true,
-            profilePhoto: true,
-          },
-        },
-      },
+      include: expectedPostInclude,
       skip: 0,
       take: 20,
       orderBy: {
@@ -277,19 +277,7 @@ describe('PostsService', () => {
       where: {
         status: 'INACTIVE',
       },
-      include: {
-        user: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            profession: true,
-            city: true,
-            state: true,
-            profilePhoto: true,
-          },
-        },
-      },
+      include: expectedPostInclude,
       skip: 0,
       take: 10,
       orderBy: {
@@ -324,19 +312,7 @@ describe('PostsService', () => {
       where: {
         id: 'post-1',
       },
-      include: {
-        user: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            profession: true,
-            city: true,
-            state: true,
-            profilePhoto: true,
-          },
-        },
-      },
+      include: expectedPostInclude,
     });
     expect(result).toBe(post);
   });
@@ -384,6 +360,7 @@ describe('PostsService', () => {
       data: {
         title: 'Servicio actualizado',
       },
+      include: expectedPostInclude,
     });
     expect(result).toBe(updatedPost);
   });
@@ -449,6 +426,7 @@ describe('PostsService', () => {
       data: {
         status: 'INACTIVE',
       },
+      include: expectedPostInclude,
     });
     expect(result).toBe(updatedPost);
   });
@@ -505,6 +483,7 @@ describe('PostsService', () => {
       data: {
         status: 'DELETED',
       },
+      include: expectedPostInclude,
     });
     expect(result).toBe(updatedPost);
   });

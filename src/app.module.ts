@@ -12,6 +12,7 @@ import { PostsModule } from './posts/posts.module';
 import { FavoritesModule } from './favorites/favorites.module';
 import { ContactsModule } from './contacts/contacts.module';
 import { ReportsModule } from './reports/reports.module';
+import { ReviewsModule } from './reviews/reviews.module';
 
 @Module({
   imports: [
@@ -31,6 +32,7 @@ import { ReportsModule } from './reports/reports.module';
     FavoritesModule,
     ContactsModule,
     ReportsModule,
+    ReviewsModule,
   ],
   controllers: [AppController],
   providers: [

@@ -51,6 +51,10 @@ export class AuthService {
       profession: registerDto.profession,
       description: registerDto.description,
       profilePhoto: registerDto.profilePhoto,
+      whatsapp: registerDto.whatsapp,
+      instagramUrl: registerDto.instagramUrl,
+      facebookUrl: registerDto.facebookUrl,
+      websiteUrl: registerDto.websiteUrl,
     });
   }
 
@@ -101,10 +105,7 @@ export class AuthService {
       throw new UnauthorizedException('La contraseña actual es incorrecta');
     }
 
-    const hashedPassword = await bcrypt.hash(
-      changePasswordDto.newPassword,
-      10,
-    );
+    const hashedPassword = await bcrypt.hash(changePasswordDto.newPassword, 10);
 
     return this.usersService.updatePassword(userId, hashedPassword);
   }

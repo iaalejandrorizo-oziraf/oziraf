@@ -8,50 +8,74 @@ datasource db {
 }
 
 model User {
-  id            String   @id @default(cuid())
-  email         String   @unique
-  password      String
-  firstName     String
-  lastName      String?
-  phone         String?
-  role          String   @default("USER")
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-  emailVerified Boolean  @default(false)
-  profilePhoto  String?
-  status        String   @default("ACTIVE")
-  city          String?
-  description   String?
-  neighborhood  String?
-  profession    String?
-  state         String?
-  posts         Post[]
-  favorites     Favorite[]
-  sentLeads     ContactLead[] @relation("LeadSender")
-  receivedLeads ContactLead[] @relation("LeadOwner")
-  reports       PostReport[]
-  passwordResetTokens PasswordResetToken[]
+  id                      String                   @id @default(cuid())
+  email                   String                   @unique
+  password                String
+  firstName               String
+  lastName                String?
+  phone                   String?
+  role                    String                   @default("USER")
+  createdAt               DateTime                 @default(now())
+  updatedAt               DateTime                 @updatedAt
+  emailVerified           Boolean                  @default(false)
+  profilePhoto            String?
+  whatsapp                String?
+  instagramUrl            String?
+  facebookUrl             String?
+  websiteUrl              String?
+  status                  String                   @default("ACTIVE")
+  city                    String?
+  description             String?
+  neighborhood            String?
+  profession              String?
+  state                   String?
+  posts                   Post[]
+  favorites               Favorite[]
+  sentLeads               ContactLead[]            @relation("LeadSender")
+  receivedLeads           ContactLead[]            @relation("LeadOwner")
+  reports                 PostReport[]
+  reviews                 Review[]
+  passwordResetTokens     PasswordResetToken[]
   emailVerificationTokens EmailVerificationToken[]
 }
 
 model Post {
-  id           String   @id @default(cuid())
+  id           String        @id @default(cuid())
   title        String
   description  String
   category     String
   city         String
   state        String
   neighborhood String?
+  address      String?
+  latitude     Float?
+  longitude    Float?
+  imageUrls    String[]      @default([])
   price        Float?
-  status       String   @default("ACTIVE")
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  status       String        @default("ACTIVE")
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
   userId       String
-  country      String   @default("México")
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  country      String        @default("México")
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   favorites    Favorite[]
   leads        ContactLead[]
   reports      PostReport[]
+  reviews      Review[]
+}
+
+model Review {
+  id        String   @id @default(cuid())
+  postId    String
+  authorId  String
+  rating    Int
+  comment   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, authorId])
 }
 
 model Favorite {

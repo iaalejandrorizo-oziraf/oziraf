@@ -19,6 +19,10 @@ export const publicUserSelect = {
   updatedAt: true,
   emailVerified: true,
   profilePhoto: true,
+  whatsapp: true,
+  instagramUrl: true,
+  facebookUrl: true,
+  websiteUrl: true,
   status: true,
   city: true,
   description: true,
@@ -43,6 +47,10 @@ export class UsersService {
     profession?: string;
     description?: string;
     profilePhoto?: string;
+    whatsapp?: string;
+    instagramUrl?: string;
+    facebookUrl?: string;
+    websiteUrl?: string;
   }) {
     return this.prisma.user.create({
       data,
