@@ -34,8 +34,8 @@ const demoProviders = [
         latitude: 20.6748,
         longitude: -103.3586,
         imageUrls: [
-          'https://placehold.co/900x600/e7f0df/17211b?text=Remodelacion+OZIRAF',
-          'https://placehold.co/900x600/f6f7f4/17211b?text=Antes+y+Despues',
+          'https://placehold.co/900x600/ede6ff/08060d?text=Remodelacion+OZIRAF',
+          'https://placehold.co/900x600/e8f7ff/08060d?text=Antes+y+Despues',
         ],
         price: 2500,
       },
@@ -69,8 +69,8 @@ const demoProviders = [
         latitude: 20.6736,
         longitude: -103.4055,
         imageUrls: [
-          'https://placehold.co/900x600/e7f0df/17211b?text=Instalacion+Electrica',
-          'https://placehold.co/900x600/f6f7f4/17211b?text=Revision+de+Cargas',
+          'https://placehold.co/900x600/ede6ff/08060d?text=Instalacion+Electrica',
+          'https://placehold.co/900x600/e8f7ff/08060d?text=Revision+de+Cargas',
         ],
         price: 650,
       },
@@ -104,8 +104,8 @@ const demoProviders = [
         latitude: 25.6866,
         longitude: -100.3161,
         imageUrls: [
-          'https://placehold.co/900x600/e7f0df/17211b?text=Limpieza+Profunda',
-          'https://placehold.co/900x600/f6f7f4/17211b?text=Servicio+para+Mudanza',
+          'https://placehold.co/900x600/ede6ff/08060d?text=Limpieza+Profunda',
+          'https://placehold.co/900x600/e8f7ff/08060d?text=Servicio+para+Mudanza',
         ],
         price: 1200,
       },

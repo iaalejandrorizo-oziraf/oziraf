@@ -101,7 +101,7 @@ async function main() {
       latitude: 20.6767,
       longitude: -103.3475,
       imageUrls: [
-        'https://placehold.co/900x600/e7f0df/17211b?text=Smoke+OZIRAF',
+        'https://placehold.co/900x600/ede6ff/08060d?text=Smoke+OZIRAF',
       ],
       price: 700,
     },
