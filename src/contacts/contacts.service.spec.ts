@@ -155,6 +155,49 @@ describe('ContactsService', () => {
     });
   });
 
+  it('finds sent leads for a client', async () => {
+    const leads = [
+      {
+        id: 'lead-id',
+        senderId: 'sender-id',
+      },
+    ];
+    prisma.contactLead.findMany.mockResolvedValue(leads);
+    prisma.contactLead.count.mockResolvedValue(1);
+
+    const result = await service.findSent('sender-id', {
+      page: 1,
+      limit: 10,
+      status: 'NEW',
+    });
+
+    expect(prisma.contactLead.findMany).toHaveBeenCalledWith({
+      where: {
+        senderId: 'sender-id',
+        status: 'NEW',
+      },
+      include: expect.any(Object),
+      skip: 0,
+      take: 10,
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+    expect(prisma.contactLead.count).toHaveBeenCalledWith({
+      where: {
+        senderId: 'sender-id',
+        status: 'NEW',
+      },
+    });
+    expect(result).toEqual({
+      data: leads,
+      page: 1,
+      limit: 10,
+      total: 1,
+      totalPages: 1,
+    });
+  });
+
   it('updates a received lead status for the owner', async () => {
     const lead = {
       id: 'lead-id',

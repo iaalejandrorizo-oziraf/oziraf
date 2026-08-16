@@ -173,6 +173,17 @@ async function main() {
     'Provider did not receive lead',
   );
 
+  const sentLeads = await api(
+    'GET',
+    '/contacts/sent?page=1&limit=10',
+    undefined,
+    clientToken,
+  );
+  assert(
+    sentLeads.data.some((item) => item.id === lead.id),
+    'Client sent lead list is missing lead',
+  );
+
   const readLead = await api(
     'PATCH',
     `/contacts/leads/${lead.id}/status`,

@@ -7,6 +7,7 @@ describe('ContactsController', () => {
   let contactsService: {
     create: jest.Mock;
     findReceived: jest.Mock;
+    findSent: jest.Mock;
     updateStatus: jest.Mock;
   };
 
@@ -14,6 +15,7 @@ describe('ContactsController', () => {
     contactsService = {
       create: jest.fn(),
       findReceived: jest.fn(),
+      findSent: jest.fn(),
       updateStatus: jest.fn(),
     };
 
@@ -89,6 +91,42 @@ describe('ContactsController', () => {
     );
 
     expect(contactsService.findReceived).toHaveBeenCalledWith('owner-id', {
+      page: 1,
+      limit: 10,
+      status: 'NEW',
+    });
+    expect(result).toBe(response);
+  });
+
+  it('returns sent leads for the authenticated user', async () => {
+    const response = {
+      data: [
+        {
+          id: 'lead-id',
+          senderId: 'sender-id',
+        },
+      ],
+      page: 1,
+      limit: 10,
+      total: 1,
+      totalPages: 1,
+    };
+    contactsService.findSent.mockResolvedValue(response);
+
+    const result = await controller.findSent(
+      {
+        user: {
+          userId: 'sender-id',
+        },
+      },
+      {
+        page: 1,
+        limit: 10,
+        status: 'NEW',
+      },
+    );
+
+    expect(contactsService.findSent).toHaveBeenCalledWith('sender-id', {
       page: 1,
       limit: 10,
       status: 'NEW',

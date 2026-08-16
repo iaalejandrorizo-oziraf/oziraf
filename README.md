@@ -114,6 +114,7 @@ Posts support service address, latitude, longitude and up to 6 image URLs.
 
 - `POST /contacts/posts/:postId`
 - `GET /contacts/leads?page=1&limit=10&status=NEW`
+- `GET /contacts/sent?page=1&limit=10&status=NEW`
 - `PATCH /contacts/leads/:id/status`
 
 ### Reports

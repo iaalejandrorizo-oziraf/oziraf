@@ -41,6 +41,11 @@ export class ContactsController {
     return this.contactsService.findReceived(req.user.userId, query);
   }
 
+  @Get('sent')
+  async findSent(@Request() req, @Query() query: ListContactLeadsQueryDto) {
+    return this.contactsService.findSent(req.user.userId, query);
+  }
+
   @Patch('leads/:id/status')
   async updateStatus(
     @Param('id') id: string,

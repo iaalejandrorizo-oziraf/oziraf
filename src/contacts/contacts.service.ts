@@ -91,6 +91,57 @@ export class ContactsService {
     return buildPaginatedResponse(leads, total, options);
   }
 
+  async findSent(senderId: string, options?: ListContactLeadsQueryDto) {
+    const where: Prisma.ContactLeadWhereInput = {
+      senderId,
+      ...(options?.status && {
+        status: options.status,
+      }),
+    };
+
+    const [leads, total] = await Promise.all([
+      this.prisma.contactLead.findMany({
+        where,
+        include: {
+          post: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  firstName: true,
+                  lastName: true,
+                  profession: true,
+                  city: true,
+                  state: true,
+                  phone: true,
+                  whatsapp: true,
+                },
+              },
+            },
+          },
+          owner: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+              phone: true,
+            },
+          },
+        },
+        ...getPagination(options),
+        orderBy: {
+          createdAt: 'desc',
+        },
+      }),
+      this.prisma.contactLead.count({
+        where,
+      }),
+    ]);
+
+    return buildPaginatedResponse(leads, total, options);
+  }
+
   async updateStatus(
     id: string,
     ownerId: string,
