@@ -49,9 +49,12 @@ The container applies pending Prisma migrations before starting the API.
 npm run build
 npm run test
 npm run test:e2e
+npm run smoke:mvp
 npm run start:prod:migrate
 npm run start:dev
 ```
+
+`npm run smoke:mvp` requires the API to be running. It creates temporary users and validates the core MVP flow: auth, profile update, post creation, favorite, contact lead, report, provider stats and post pause.
 
 ## CI
 
@@ -143,6 +146,20 @@ The API uses a global validation pipe with:
 
 Current protections include trimmed text input, length limits, valid profile photo URLs, positive prices, paginated listings, password reset tokens, email verification tokens and public user responses without passwords.
 Public post listings return only active posts. Users can pause and reactivate their own posts with `ACTIVE` and `INACTIVE`. Deleting a post marks it as `DELETED` instead of removing the row. Users cannot add their own posts to favorites or contact their own posts.
+
+## Smoke Test
+
+With the API running locally:
+
+```bash
+npm run smoke:mvp
+```
+
+Use `OZIRAF_API_URL` to target another environment:
+
+```bash
+OZIRAF_API_URL=https://api.example.com npm run smoke:mvp
+```
 
 ## Paginated Responses
 
