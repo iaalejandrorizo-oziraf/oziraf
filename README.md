@@ -34,6 +34,8 @@ npm run start:dev
 
 The API runs on `http://localhost:3000` by default.
 
+The seed creates the configured admin user and demo marketplace providers/posts. Demo provider accounts use `Password123`.
+
 ## Docker
 
 ```bash
