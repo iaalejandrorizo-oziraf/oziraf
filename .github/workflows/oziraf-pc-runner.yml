@@ -32,6 +32,7 @@ jobs:
       GRADLE_USER_HOME: D:\OZIRAF\tools\gradle-cache
       TEMP: D:\OZIRAF\tools\tmp
       TMP: D:\OZIRAF\tools\tmp
+      OZIRAF_APK_PUBLISH_PATH: D:\OZIRAF\mobile\build\web\downloads\oziraf-debug.apk
 
     steps:
       - name: Checkout
@@ -81,6 +82,31 @@ jobs:
         if: inputs.task == 'mobile-build-apk'
         working-directory: mobile
         run: flutter build apk --debug
+
+      - name: Publish APK to OZIRAF local server
+        if: inputs.task == 'mobile-build-apk'
+        working-directory: mobile
+        run: |
+          $source = Join-Path $PWD 'build\app\outputs\flutter-apk\app-debug.apk'
+          $destination = $env:OZIRAF_APK_PUBLISH_PATH
+          if (-not (Test-Path $source)) {
+            throw "APK not found at $source"
+          }
+          New-Item -ItemType Directory -Force -Path (Split-Path $destination -Parent) | Out-Null
+          Copy-Item -Path $source -Destination $destination -Force
+          $apk = Get-Item $destination
+          Write-Host "Published APK: $($apk.FullName)"
+          Write-Host "Size: $($apk.Length) bytes"
+          Write-Host "Updated: $($apk.LastWriteTime)"
+
+      - name: Upload APK artifact
+        if: inputs.task == 'mobile-build-apk'
+        uses: actions/upload-artifact@v4
+        with:
+          name: oziraf-debug-apk
+          path: mobile/build/app/outputs/flutter-apk/app-debug.apk
+          if-no-files-found: error
+          retention-days: 14
 
       - name: Mobile build web
         if: inputs.task == 'mobile-build-web'
