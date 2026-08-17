@@ -1,6 +1,11 @@
 name: OZIRAF PC Runner
 
 on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'mobile/**'
   workflow_dispatch:
     inputs:
       task:
@@ -19,7 +24,7 @@ on:
 
 jobs:
   run:
-    name: Run ${{ inputs.task }}
+    name: Run ${{ github.event_name == 'push' && 'mobile-auto-deploy' || inputs.task }}
     runs-on: [self-hosted, Windows, X64, oziraf]
 
     defaults:
@@ -27,11 +32,13 @@ jobs:
         shell: powershell
 
     env:
+      TASK: ${{ github.event_name == 'push' && 'mobile-auto-deploy' || inputs.task }}
       FLUTTER_HOME: D:\OZIRAF\tools\flutter-zip\flutter
       ANDROID_HOME: C:\Users\aleja\AppData\Local\Android\Sdk
       GRADLE_USER_HOME: D:\OZIRAF\tools\gradle-cache
       TEMP: D:\OZIRAF\tools\tmp
       TMP: D:\OZIRAF\tools\tmp
+      OZIRAF_WEB_PUBLISH_PATH: D:\OZIRAF\mobile\build\web
       OZIRAF_APK_PUBLISH_PATH: D:\OZIRAF\mobile\build\web\downloads\oziraf-debug.apk
 
     steps:
@@ -47,44 +54,64 @@ jobs:
           "$env:ANDROID_HOME\emulator" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 
       - name: Backend install
-        if: inputs.task == 'backend-test' || inputs.task == 'backend-build' || inputs.task == 'all-checks'
+        if: env.TASK == 'backend-test' || env.TASK == 'backend-build' || env.TASK == 'all-checks'
         run: npm ci
 
       - name: Backend test
-        if: inputs.task == 'backend-test' || inputs.task == 'all-checks'
+        if: env.TASK == 'backend-test' || env.TASK == 'all-checks'
         run: npm run test -- --runInBand
 
       - name: Backend build
-        if: inputs.task == 'backend-build' || inputs.task == 'all-checks'
+        if: env.TASK == 'backend-build' || env.TASK == 'all-checks'
         run: npm run build
 
       - name: Flutter doctor
-        if: startsWith(inputs.task, 'mobile-') || inputs.task == 'all-checks'
+        if: startsWith(env.TASK, 'mobile-') || env.TASK == 'all-checks'
         working-directory: mobile
         run: flutter doctor -v
 
       - name: Flutter pub get
-        if: startsWith(inputs.task, 'mobile-') || inputs.task == 'all-checks'
+        if: startsWith(env.TASK, 'mobile-') || env.TASK == 'all-checks'
         working-directory: mobile
         run: flutter pub get
 
       - name: Mobile analyze
-        if: inputs.task == 'mobile-analyze' || inputs.task == 'all-checks'
+        if: env.TASK == 'mobile-analyze' || env.TASK == 'mobile-auto-deploy' || env.TASK == 'all-checks'
         working-directory: mobile
         run: flutter analyze
 
       - name: Mobile test
-        if: inputs.task == 'mobile-test' || inputs.task == 'all-checks'
+        if: env.TASK == 'mobile-test' || env.TASK == 'all-checks'
         working-directory: mobile
         run: flutter test
 
       - name: Mobile build APK
-        if: inputs.task == 'mobile-build-apk'
+        if: env.TASK == 'mobile-build-apk' || env.TASK == 'mobile-auto-deploy'
         working-directory: mobile
         run: flutter build apk --debug
 
+      - name: Mobile build web
+        if: env.TASK == 'mobile-build-web' || env.TASK == 'mobile-auto-deploy'
+        working-directory: mobile
+        run: flutter build web --debug
+
+      - name: Publish web to OZIRAF local server
+        if: env.TASK == 'mobile-build-web' || env.TASK == 'mobile-auto-deploy'
+        working-directory: mobile
+        run: |
+          $source = Join-Path $PWD 'build\web'
+          $destination = $env:OZIRAF_WEB_PUBLISH_PATH
+          if (-not (Test-Path $source)) {
+            throw "Web build not found at $source"
+          }
+          New-Item -ItemType Directory -Force -Path $destination | Out-Null
+          Get-ChildItem -Path $source | ForEach-Object {
+            Copy-Item -Path $_.FullName -Destination $destination -Recurse -Force
+          }
+          Write-Host "Published web build to $destination"
+
       - name: Publish APK to OZIRAF local server
-        if: inputs.task == 'mobile-build-apk'
+        if: env.TASK == 'mobile-build-apk' || env.TASK == 'mobile-auto-deploy'
         working-directory: mobile
         run: |
           $source = Join-Path $PWD 'build\app\outputs\flutter-apk\app-debug.apk'
@@ -100,15 +127,10 @@ jobs:
           Write-Host "Updated: $($apk.LastWriteTime)"
 
       - name: Upload APK artifact
-        if: inputs.task == 'mobile-build-apk'
+        if: env.TASK == 'mobile-build-apk' || env.TASK == 'mobile-auto-deploy'
         uses: actions/upload-artifact@v4
         with:
           name: oziraf-debug-apk
           path: mobile/build/app/outputs/flutter-apk/app-debug.apk
           if-no-files-found: error
           retention-days: 14
-
-      - name: Mobile build web
-        if: inputs.task == 'mobile-build-web'
-        working-directory: mobile
-        run: flutter build web --debug
