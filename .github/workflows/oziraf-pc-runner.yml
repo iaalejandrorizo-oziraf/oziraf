@@ -1,0 +1,88 @@
+name: OZIRAF PC Runner
+
+on:
+  workflow_dispatch:
+    inputs:
+      task:
+        description: Task to run on the OZIRAF Windows PC
+        required: true
+        default: mobile-analyze
+        type: choice
+        options:
+          - backend-test
+          - backend-build
+          - mobile-analyze
+          - mobile-test
+          - mobile-build-apk
+          - mobile-build-web
+          - all-checks
+
+jobs:
+  run:
+    name: Run ${{ inputs.task }}
+    runs-on: [self-hosted, Windows, X64, oziraf]
+
+    defaults:
+      run:
+        shell: powershell
+
+    env:
+      FLUTTER_HOME: D:\OZIRAF\tools\flutter-zip\flutter
+      ANDROID_HOME: C:\Users\aleja\AppData\Local\Android\Sdk
+      GRADLE_USER_HOME: D:\OZIRAF\tools\gradle-cache
+      TEMP: D:\OZIRAF\tools\tmp
+      TMP: D:\OZIRAF\tools\tmp
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Prepare local tool paths
+        run: |
+          New-Item -ItemType Directory -Force -Path $env:GRADLE_USER_HOME, $env:TEMP | Out-Null
+          "$env:FLUTTER_HOME\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          "$env:ANDROID_HOME\cmdline-tools\latest\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          "$env:ANDROID_HOME\platform-tools" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          "$env:ANDROID_HOME\emulator" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+
+      - name: Backend install
+        if: inputs.task == 'backend-test' || inputs.task == 'backend-build' || inputs.task == 'all-checks'
+        run: npm ci
+
+      - name: Backend test
+        if: inputs.task == 'backend-test' || inputs.task == 'all-checks'
+        run: npm run test -- --runInBand
+
+      - name: Backend build
+        if: inputs.task == 'backend-build' || inputs.task == 'all-checks'
+        run: npm run build
+
+      - name: Flutter doctor
+        if: startsWith(inputs.task, 'mobile-') || inputs.task == 'all-checks'
+        working-directory: mobile
+        run: flutter doctor -v
+
+      - name: Flutter pub get
+        if: startsWith(inputs.task, 'mobile-') || inputs.task == 'all-checks'
+        working-directory: mobile
+        run: flutter pub get
+
+      - name: Mobile analyze
+        if: inputs.task == 'mobile-analyze' || inputs.task == 'all-checks'
+        working-directory: mobile
+        run: flutter analyze
+
+      - name: Mobile test
+        if: inputs.task == 'mobile-test' || inputs.task == 'all-checks'
+        working-directory: mobile
+        run: flutter test
+
+      - name: Mobile build APK
+        if: inputs.task == 'mobile-build-apk'
+        working-directory: mobile
+        run: flutter build apk --debug
+
+      - name: Mobile build web
+        if: inputs.task == 'mobile-build-web'
+        working-directory: mobile
+        run: flutter build web --debug
