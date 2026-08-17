@@ -50,3 +50,7 @@ Debug APK:
 ```text
 build\app\outputs\flutter-apk\app-debug.apk
 ```
+
+## Automatic deployment
+
+Pushes to `main` that change files under `mobile/` automatically run on the `oziraf-pc` self-hosted runner. The workflow analyzes the Flutter app, builds Android and web, publishes the APK to the local downloads folder, refreshes the local web build, and uploads the APK as a GitHub Actions artifact.
