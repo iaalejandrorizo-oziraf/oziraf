@@ -40,7 +40,8 @@ jobs:
       TMP: D:\OZIRAF\tools\tmp
       OZIRAF_REMOTE_API_URL: http://100.112.136.50:3001
       OZIRAF_WEB_PUBLISH_PATH: D:\OZIRAF\mobile\build\web
-      OZIRAF_APK_PUBLISH_PATH: D:\OZIRAF\mobile\build\web\downloads\oziraf-debug.apk
+      OZIRAF_DEBUG_APK_PUBLISH_PATH: D:\OZIRAF\mobile\build\web\downloads\oziraf-debug.apk
+      OZIRAF_RELEASE_APK_PUBLISH_PATH: D:\OZIRAF\mobile\build\web\downloads\oziraf-release.apk
 
     steps:
       - name: Checkout
@@ -86,11 +87,19 @@ jobs:
         working-directory: mobile
         run: flutter test
 
-      - name: Mobile build APK
+      - name: Mobile build debug APK
         if: env.TASK == 'mobile-build-apk' || env.TASK == 'mobile-auto-deploy'
         working-directory: mobile
         run: |
           flutter build apk --debug `
+            "--dart-define=OZIRAF_API_URL=$env:OZIRAF_REMOTE_API_URL" `
+            "--dart-define=OZIRAF_ANDROID_API_URL=$env:OZIRAF_REMOTE_API_URL"
+
+      - name: Mobile build release APK
+        if: env.TASK == 'mobile-build-apk' || env.TASK == 'mobile-auto-deploy'
+        working-directory: mobile
+        run: |
+          flutter build apk --release `
             "--dart-define=OZIRAF_API_URL=$env:OZIRAF_REMOTE_API_URL" `
             "--dart-define=OZIRAF_ANDROID_API_URL=$env:OZIRAF_REMOTE_API_URL"
 
@@ -116,27 +125,45 @@ jobs:
           }
           Write-Host "Published web build to $destination"
 
-      - name: Publish APK to OZIRAF local server
+      - name: Publish APKs to OZIRAF local server
         if: env.TASK == 'mobile-build-apk' || env.TASK == 'mobile-auto-deploy'
         working-directory: mobile
         run: |
-          $source = Join-Path $PWD 'build\app\outputs\flutter-apk\app-debug.apk'
-          $destination = $env:OZIRAF_APK_PUBLISH_PATH
-          if (-not (Test-Path $source)) {
-            throw "APK not found at $source"
-          }
-          New-Item -ItemType Directory -Force -Path (Split-Path $destination -Parent) | Out-Null
-          Copy-Item -Path $source -Destination $destination -Force
-          $apk = Get-Item $destination
-          Write-Host "Published APK: $($apk.FullName)"
-          Write-Host "Size: $($apk.Length) bytes"
-          Write-Host "Updated: $($apk.LastWriteTime)"
+          $debugSource = Join-Path $PWD 'build\app\outputs\flutter-apk\app-debug.apk'
+          $releaseSource = Join-Path $PWD 'build\app\outputs\flutter-apk\app-release.apk'
+          $debugDestination = $env:OZIRAF_DEBUG_APK_PUBLISH_PATH
+          $releaseDestination = $env:OZIRAF_RELEASE_APK_PUBLISH_PATH
 
-      - name: Upload APK artifact
+          if (-not (Test-Path $debugSource)) {
+            throw "Debug APK not found at $debugSource"
+          }
+          if (-not (Test-Path $releaseSource)) {
+            throw "Release APK not found at $releaseSource"
+          }
+
+          New-Item -ItemType Directory -Force -Path (Split-Path $debugDestination -Parent) | Out-Null
+          Copy-Item -Path $debugSource -Destination $debugDestination -Force
+          Copy-Item -Path $releaseSource -Destination $releaseDestination -Force
+
+          $debugApk = Get-Item $debugDestination
+          $releaseApk = Get-Item $releaseDestination
+          Write-Host "Debug APK: $($debugApk.FullName) - $([math]::Round($debugApk.Length / 1MB, 2)) MB"
+          Write-Host "Release APK: $($releaseApk.FullName) - $([math]::Round($releaseApk.Length / 1MB, 2)) MB"
+
+      - name: Upload debug APK artifact
         if: env.TASK == 'mobile-build-apk' || env.TASK == 'mobile-auto-deploy'
         uses: actions/upload-artifact@v4
         with:
           name: oziraf-debug-apk
           path: mobile/build/app/outputs/flutter-apk/app-debug.apk
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload release APK artifact
+        if: env.TASK == 'mobile-build-apk' || env.TASK == 'mobile-auto-deploy'
+        uses: actions/upload-artifact@v4
+        with:
+          name: oziraf-release-apk
+          path: mobile/build/app/outputs/flutter-apk/app-release.apk
           if-no-files-found: error
           retention-days: 14
