@@ -98,8 +98,12 @@ export class PostsService {
   constructor(private prisma: PrismaService) {}
 
   private async attachMediaMetadata<T extends { id: string }>(posts: T[]) {
-    if (posts.length === 0 || !this.prisma.postMedia) {
-      return posts.map((post) => ({ ...post, media: [] }));
+    if (posts.length === 0) {
+      return posts;
+    }
+
+    if (!this.prisma.postMedia) {
+      return posts;
     }
 
     const media = await this.prisma.postMedia.findMany({
