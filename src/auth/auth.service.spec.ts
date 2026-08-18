@@ -203,7 +203,7 @@ describe('AuthService', () => {
     expect(result).not.toHaveProperty('password');
   });
 
-  it('creates email verification tokens for active unverified users', async () => {
+  it('creates email verification tokens without exposing them', async () => {
     usersService.findPrivateById.mockResolvedValue({
       id: 'user-1',
       status: 'ACTIVE',
@@ -220,7 +220,10 @@ describe('AuthService', () => {
       expect.any(String),
       expect.any(Date),
     );
-    expect(result).toHaveProperty('verificationToken');
+    expect(result).toEqual({
+      message: 'Si tu cuenta está activa, recibirás instrucciones para verificar tu correo',
+    });
+    expect(result).not.toHaveProperty('verificationToken');
   });
 
   it('confirms valid email verification tokens', async () => {
