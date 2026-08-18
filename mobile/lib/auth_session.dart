@@ -78,7 +78,7 @@ class OzirafProfile {
     String? profilePhoto,
     String? description,
   }) {
-    return OzirafProfile(
+    final updated = OzirafProfile(
       id: id,
       email: email,
       firstName: firstName ?? this.firstName,
@@ -91,12 +91,14 @@ class OzirafProfile {
       profilePhoto: profilePhoto ?? this.profilePhoto,
       description: description ?? this.description,
     );
+    OzirafSessionStore.profileNotifier.value = updated;
+    return updated;
   }
 
   factory OzirafProfile.fromJson(Map<String, dynamic> json) {
     String text(Object? value) => value is String ? value.trim() : '';
 
-    return OzirafProfile(
+    final profile = OzirafProfile(
       id: text(json['id']),
       email: text(json['email']),
       firstName: text(json['firstName']),
@@ -109,6 +111,8 @@ class OzirafProfile {
       profilePhoto: text(json['profilePhoto']),
       description: text(json['description']),
     );
+    OzirafSessionStore.profileNotifier.value = profile;
+    return profile;
   }
 }
 
@@ -117,6 +121,8 @@ class OzirafSessionStore {
   static const _accountTypeKey = 'oziraf_account_type';
 
   static final ValueNotifier<String?> tokenNotifier = ValueNotifier<String?>(null);
+  static final ValueNotifier<OzirafProfile?> profileNotifier =
+      ValueNotifier<OzirafProfile?>(null);
 
   // The local development web app is served over HTTP. Secure web storage
   // requires HTTPS, so web sessions intentionally remain in memory only.
@@ -164,10 +170,12 @@ class OzirafSessionStore {
       _webToken = null;
       _webAccountType = null;
       tokenNotifier.value = null;
+      profileNotifier.value = null;
       return;
     }
     await _storage.delete(key: _tokenKey);
     await _storage.delete(key: _accountTypeKey);
     tokenNotifier.value = null;
+    profileNotifier.value = null;
   }
 }
