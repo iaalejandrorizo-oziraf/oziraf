@@ -11,9 +11,9 @@ Future<void> showPostVideoDialog(
   BuildContext context, {
   required String url,
   required String title,
-  required String postId,
-  required String providerName,
-  required String description,
+  String postId = '',
+  String providerName = 'Anunciante OZIRAF',
+  String description = '',
 }) async {
   await showDialog<void>(
     context: context,
@@ -54,6 +54,7 @@ class _PostVideoPlayerState extends State<_PostVideoPlayer> {
   late final Future<void> initializeFuture;
   bool favorite = false;
   bool favoriteLoading = false;
+  String resolvedPostId = '';
 
   String get apiBase {
     final uri = Uri.parse(widget.url);
@@ -61,19 +62,28 @@ class _PostVideoPlayerState extends State<_PostVideoPlayer> {
     if (segments.length >= 3) {
       segments.removeRange(segments.length - 3, segments.length);
     }
-    return uri.replace(pathSegments: segments, query: null, fragment: null).toString().replaceAll(RegExp(r'/$'), '');
+    return uri
+        .replace(pathSegments: segments, query: null, fragment: null)
+        .toString()
+        .replaceAll(RegExp(r'/$'), '');
+  }
+
+  String get mediaId {
+    final uri = Uri.parse(widget.url);
+    return uri.pathSegments.isEmpty ? '' : uri.pathSegments.last;
   }
 
   @override
   void initState() {
     super.initState();
+    resolvedPostId = widget.postId;
     controller = VideoPlayerController.networkUrl(Uri.parse(widget.url));
     initializeFuture = controller.initialize().then((_) async {
       await controller.setLooping(true);
       await controller.play();
       if (mounted) setState(() {});
     });
-    _loadFavoriteStatus();
+    _resolvePostContext();
   }
 
   @override
@@ -82,12 +92,31 @@ class _PostVideoPlayerState extends State<_PostVideoPlayer> {
     super.dispose();
   }
 
+  Future<void> _resolvePostContext() async {
+    if (resolvedPostId.isEmpty && mediaId.isNotEmpty) {
+      try {
+        final response = await http.get(
+          Uri.parse('$apiBase/posts/media/$mediaId/context'),
+        );
+        if (response.statusCode >= 200 && response.statusCode < 300) {
+          final payload = jsonDecode(response.body);
+          if (payload is Map<String, dynamic>) {
+            resolvedPostId = payload['postId']?.toString() ?? '';
+          }
+        }
+      } catch (_) {}
+    }
+    await _loadFavoriteStatus();
+    if (mounted) setState(() {});
+  }
+
   Future<void> _loadFavoriteStatus() async {
+    if (resolvedPostId.isEmpty) return;
     final token = OzirafSessionStore.tokenNotifier.value;
     if (token == null || token.isEmpty) return;
     try {
       final response = await http.get(
-        Uri.parse('$apiBase/favorites/${widget.postId}/status'),
+        Uri.parse('$apiBase/favorites/$resolvedPostId/status'),
         headers: {'Authorization': 'Bearer $token'},
       );
       if (response.statusCode < 200 || response.statusCode >= 300) return;
@@ -99,6 +128,10 @@ class _PostVideoPlayerState extends State<_PostVideoPlayer> {
   }
 
   Future<void> _toggleFavorite() async {
+    if (resolvedPostId.isEmpty) {
+      _showMessage('Todavía estamos cargando este anuncio.');
+      return;
+    }
     final token = OzirafSessionStore.tokenNotifier.value;
     if (token == null || token.isEmpty) {
       _showMessage('Inicia sesión para guardar anuncios.');
@@ -107,7 +140,7 @@ class _PostVideoPlayerState extends State<_PostVideoPlayer> {
     if (favoriteLoading) return;
     setState(() => favoriteLoading = true);
     try {
-      final uri = Uri.parse('$apiBase/favorites/${widget.postId}');
+      final uri = Uri.parse('$apiBase/favorites/$resolvedPostId');
       final response = favorite
           ? await http.delete(uri, headers: {'Authorization': 'Bearer $token'})
           : await http.post(uri, headers: {'Authorization': 'Bearer $token'});
@@ -124,13 +157,20 @@ class _PostVideoPlayerState extends State<_PostVideoPlayer> {
   }
 
   Future<void> _share() async {
+    final details = widget.description.trim().isEmpty
+        ? widget.title
+        : '${widget.title}\n${widget.description}';
     await Share.share(
-      'Mira este servicio en OZIRAF:\n${widget.title}\n${widget.providerName}\n${widget.description}',
+      'Mira este servicio en OZIRAF:\n$details',
       subject: widget.title,
     );
   }
 
   Future<void> _openComments() async {
+    if (resolvedPostId.isEmpty) {
+      _showMessage('Todavía estamos cargando este anuncio.');
+      return;
+    }
     final wasPlaying = controller.value.isPlaying;
     await controller.pause();
     if (!mounted) return;
@@ -141,7 +181,7 @@ class _PostVideoPlayerState extends State<_PostVideoPlayer> {
       backgroundColor: Colors.white,
       builder: (_) => _CommentsSheet(
         apiBase: apiBase,
-        postId: widget.postId,
+        postId: resolvedPostId,
       ),
     );
     if (mounted && wasPlaying) await controller.play();
@@ -186,10 +226,13 @@ class _PostVideoPlayerState extends State<_PostVideoPlayer> {
                   fit: StackFit.expand,
                   children: [
                     GestureDetector(
-                      onTap: () => value.isPlaying ? controller.pause() : controller.play(),
+                      onTap: () => value.isPlaying
+                          ? controller.pause()
+                          : controller.play(),
                       child: Center(
                         child: AspectRatio(
-                          aspectRatio: value.aspectRatio > 0 ? value.aspectRatio : 9 / 16,
+                          aspectRatio:
+                              value.aspectRatio > 0 ? value.aspectRatio : 9 / 16,
                           child: VideoPlayer(controller),
                         ),
                       ),
@@ -205,7 +248,11 @@ class _PostVideoPlayerState extends State<_PostVideoPlayer> {
                     if (!value.isPlaying)
                       const Center(
                         child: IgnorePointer(
-                          child: Icon(Icons.play_circle_fill, color: Colors.white70, size: 72),
+                          child: Icon(
+                            Icons.play_circle_fill,
+                            color: Colors.white70,
+                            size: 72,
+                          ),
                         ),
                       ),
                     Positioned(
@@ -222,7 +269,9 @@ class _PostVideoPlayerState extends State<_PostVideoPlayer> {
                               color: Colors.white,
                               fontSize: 16,
                               fontWeight: FontWeight.w900,
-                              shadows: [Shadow(blurRadius: 5, color: Colors.black)],
+                              shadows: [
+                                Shadow(blurRadius: 5, color: Colors.black),
+                              ],
                             ),
                           ),
                           const SizedBox(height: 4),
@@ -233,7 +282,9 @@ class _PostVideoPlayerState extends State<_PostVideoPlayer> {
                             style: const TextStyle(
                               color: Colors.white,
                               fontWeight: FontWeight.w700,
-                              shadows: [Shadow(blurRadius: 5, color: Colors.black)],
+                              shadows: [
+                                Shadow(blurRadius: 5, color: Colors.black),
+                              ],
                             ),
                           ),
                         ],
@@ -258,9 +309,12 @@ class _PostVideoPlayerState extends State<_PostVideoPlayer> {
                           ),
                           const SizedBox(height: 14),
                           _SocialButton(
-                            icon: favorite ? Icons.bookmark : Icons.bookmark_border,
+                            icon: favorite
+                                ? Icons.bookmark
+                                : Icons.bookmark_border,
                             label: favorite ? 'Guardado' : 'Guardar',
-                            onPressed: favoriteLoading ? null : _toggleFavorite,
+                            onPressed:
+                                favoriteLoading ? null : _toggleFavorite,
                           ),
                         ],
                       ),
@@ -360,7 +414,9 @@ class _CommentsSheetState extends State<_CommentsSheet> {
     });
     try {
       final response = await http.get(
-        Uri.parse('${widget.apiBase}/reviews/posts/${widget.postId}?page=1&limit=50'),
+        Uri.parse(
+          '${widget.apiBase}/reviews/posts/${widget.postId}?page=1&limit=50',
+        ),
       );
       if (response.statusCode < 200 || response.statusCode >= 300) {
         throw Exception('No se pudieron cargar los comentarios.');
@@ -412,14 +468,20 @@ class _CommentsSheetState extends State<_CommentsSheet> {
         try {
           payload = jsonDecode(response.body);
         } catch (_) {}
-        final message = payload is Map<String, dynamic> ? payload['message'] : null;
-        throw Exception(message is String ? message : 'No se pudo publicar el comentario.');
+        final message = payload is Map<String, dynamic>
+            ? payload['message']
+            : null;
+        throw Exception(
+          message is String ? message : 'No se pudo publicar el comentario.',
+        );
       }
       comment.clear();
       await load();
     } catch (e) {
       if (mounted) {
-        setState(() => error = e.toString().replaceFirst('Exception: ', ''));
+        setState(
+          () => error = e.toString().replaceFirst('Exception: ', ''),
+        );
       }
     } finally {
       if (mounted) setState(() => sending = false);
@@ -449,10 +511,16 @@ class _CommentsSheetState extends State<_CommentsSheet> {
               children: [
                 Text(
                   'Comentarios',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900),
+                  style: Theme.of(context)
+                      .textTheme
+                      .titleLarge
+                      ?.copyWith(fontWeight: FontWeight.w900),
                 ),
                 const Spacer(),
-                IconButton(onPressed: () => Navigator.pop(context), icon: const Icon(Icons.close)),
+                IconButton(
+                  onPressed: () => Navigator.pop(context),
+                  icon: const Icon(Icons.close),
+                ),
               ],
             ),
             Expanded(
@@ -461,19 +529,31 @@ class _CommentsSheetState extends State<_CommentsSheet> {
                   : error != null && comments.isEmpty
                       ? Center(child: Text(error!, textAlign: TextAlign.center))
                       : comments.isEmpty
-                          ? const Center(child: Text('Sé el primero en comentar.'))
+                          ? const Center(
+                              child: Text('Sé el primero en comentar.'),
+                            )
                           : ListView.separated(
                               itemCount: comments.length,
-                              separatorBuilder: (_, _) => const Divider(height: 1),
+                              separatorBuilder: (_, _) =>
+                                  const Divider(height: 1),
                               itemBuilder: (context, index) {
                                 final item = comments[index];
-                                final text = item['comment']?.toString().trim() ?? '';
-                                final stars = item['rating'] is num ? (item['rating'] as num).toInt() : 0;
+                                final text =
+                                    item['comment']?.toString().trim() ?? '';
+                                final stars = item['rating'] is num
+                                    ? (item['rating'] as num).toInt()
+                                    : 0;
                                 return ListTile(
                                   contentPadding: EdgeInsets.zero,
-                                  title: Text(authorName(item), style: const TextStyle(fontWeight: FontWeight.w800)),
+                                  title: Text(
+                                    authorName(item),
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                                  ),
                                   subtitle: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Text('★' * stars),
                                       if (text.isNotEmpty) Text(text),
@@ -486,7 +566,10 @@ class _CommentsSheetState extends State<_CommentsSheet> {
             if (error != null && comments.isNotEmpty)
               Padding(
                 padding: const EdgeInsets.only(bottom: 6),
-                child: Text(error!, style: const TextStyle(color: Colors.red)),
+                child: Text(
+                  error!,
+                  style: const TextStyle(color: Colors.red),
+                ),
               ),
             Row(
               children: List.generate(5, (index) {
@@ -494,7 +577,9 @@ class _CommentsSheetState extends State<_CommentsSheet> {
                 return IconButton(
                   visualDensity: VisualDensity.compact,
                   onPressed: () => setState(() => rating = value),
-                  icon: Icon(value <= rating ? Icons.star : Icons.star_border),
+                  icon: Icon(
+                    value <= rating ? Icons.star : Icons.star_border,
+                  ),
                 );
               }),
             ),
@@ -517,7 +602,11 @@ class _CommentsSheetState extends State<_CommentsSheet> {
                 IconButton.filled(
                   onPressed: sending ? null : send,
                   icon: sending
-                      ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
                       : const Icon(Icons.send),
                 ),
               ],
