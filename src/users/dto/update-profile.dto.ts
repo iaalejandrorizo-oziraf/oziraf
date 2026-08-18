@@ -1,7 +1,11 @@
-import { IsOptional, IsString, IsUrl, MaxLength } from 'class-validator';
+import { IsIn, IsOptional, IsString, IsUrl, MaxLength } from 'class-validator';
 import { Trim } from '../../common/decorators/trim.decorator';
 
 export class UpdateProfileDto {
+  @IsOptional()
+  @IsIn(['SOLICITANTE', 'ANUNCIANTE'])
+  accountType?: string;
+
   @IsOptional()
   @Trim()
   @IsString()
