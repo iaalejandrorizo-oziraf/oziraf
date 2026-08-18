@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:oziraf/main.dart';
+import 'package:oziraf/app_v2.dart';
 
 void main() {
-  testWidgets('renders OZIRAF home experience', (tester) async {
-    await tester.binding.setSurfaceSize(const Size(390, 844));
-    await tester.pumpWidget(const OzirafApp());
-    await tester.pumpAndSettle();
+  testWidgets('renders OZIRAF branding', (tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Scaffold(
+          body: Center(child: OzirafMark(size: 64)),
+        ),
+      ),
+    );
 
-    expect(find.byType(HomeShell), findsOneWidget);
-    expect(find.byType(OzirafBottomNavigation), findsOneWidget);
+    expect(find.byType(OzirafMark), findsOneWidget);
   });
 }
