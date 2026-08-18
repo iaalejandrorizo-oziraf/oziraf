@@ -44,7 +44,16 @@ const postUserInclude = {
   },
 };
 
-function withRating<T extends { reviews?: { rating: number }[] }>(post: T) {
+type MediaUpload = {
+  buffer: Buffer;
+  mimetype: string;
+  originalname: string;
+  size: number;
+};
+
+function withRating<T extends { id: string; reviews?: { rating: number }[] }>(
+  post: T,
+) {
   if (post.reviews === undefined) {
     return post;
   }
@@ -69,7 +78,9 @@ function withRating<T extends { reviews?: { rating: number }[] }>(post: T) {
   };
 }
 
-function withRatings<T extends { reviews?: { rating: number }[] }>(posts: T[]) {
+function withRatings<
+  T extends { id: string; reviews?: { rating: number }[] },
+>(posts: T[]) {
   return posts.map((post) => withRating(post));
 }
 
@@ -86,6 +97,44 @@ function getPostOrderBy(options: ListPostsQueryDto = {}) {
 export class PostsService {
   constructor(private prisma: PrismaService) {}
 
+  private async attachMediaMetadata<T extends { id: string }>(posts: T[]) {
+    if (posts.length === 0 || !this.prisma.postMedia) {
+      return posts.map((post) => ({ ...post, media: [] }));
+    }
+
+    const media = await this.prisma.postMedia.findMany({
+      where: {
+        postId: {
+          in: posts.map((post) => post.id),
+        },
+      },
+      select: {
+        id: true,
+        postId: true,
+        kind: true,
+        mimeType: true,
+        fileName: true,
+        size: true,
+        createdAt: true,
+      },
+      orderBy: {
+        createdAt: 'asc',
+      },
+    });
+
+    const byPost = new Map<string, typeof media>();
+    for (const item of media) {
+      const current = byPost.get(item.postId) ?? [];
+      current.push(item);
+      byPost.set(item.postId, current);
+    }
+
+    return posts.map((post) => ({
+      ...post,
+      media: byPost.get(post.id) ?? [],
+    }));
+  }
+
   // Crear publicación
   async create(userId: string, createPostDto: CreatePostDto) {
     const post = await this.prisma.post.create({
@@ -96,7 +145,129 @@ export class PostsService {
       include: postUserInclude,
     });
 
-    return withRating(post);
+    return {
+      ...withRating(post),
+      media: [],
+    };
+  }
+
+  async addMedia(id: string, userId: string, file?: MediaUpload) {
+    if (!file) {
+      throw new BadRequestException('Selecciona una foto o video');
+    }
+
+    const post = await this.prisma.post.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        userId: true,
+        status: true,
+      },
+    });
+
+    if (!post || post.status === 'DELETED') {
+      throw new NotFoundException('La publicación no existe');
+    }
+
+    if (post.userId !== userId) {
+      throw new ForbiddenException(
+        'No tienes permiso para agregar archivos a esta publicación',
+      );
+    }
+
+    const imageTypes = new Set(['image/jpeg', 'image/png', 'image/webp']);
+    const videoTypes = new Set([
+      'video/mp4',
+      'video/quicktime',
+      'video/webm',
+      'video/3gpp',
+    ]);
+
+    const kind = imageTypes.has(file.mimetype)
+      ? 'IMAGE'
+      : videoTypes.has(file.mimetype)
+        ? 'VIDEO'
+        : null;
+
+    if (!kind) {
+      throw new BadRequestException(
+        'Formato no compatible. Usa JPEG, PNG, WebP, MP4, MOV, WebM o 3GP',
+      );
+    }
+
+    if (kind === 'IMAGE' && file.size > 2_500_000) {
+      throw new BadRequestException('Cada foto debe pesar máximo 2.5 MB');
+    }
+
+    if (kind === 'VIDEO' && file.size > 12_000_000) {
+      throw new BadRequestException('El video debe pesar máximo 12 MB');
+    }
+
+    const existing = await this.prisma.postMedia.findMany({
+      where: { postId: id },
+      select: { kind: true },
+    });
+
+    if (existing.length >= 5) {
+      throw new BadRequestException(
+        'Cada anuncio puede tener hasta 4 fotos y 1 video',
+      );
+    }
+
+    const imageCount = existing.filter((item) => item.kind === 'IMAGE').length;
+    const videoCount = existing.filter((item) => item.kind === 'VIDEO').length;
+
+    if (kind === 'IMAGE' && imageCount >= 4) {
+      throw new BadRequestException('Cada anuncio puede tener hasta 4 fotos');
+    }
+
+    if (kind === 'VIDEO' && videoCount >= 1) {
+      throw new BadRequestException('Cada anuncio puede tener hasta 1 video');
+    }
+
+    const created = await this.prisma.postMedia.create({
+      data: {
+        postId: id,
+        kind,
+        mimeType: file.mimetype,
+        fileName: file.originalname || null,
+        size: file.size,
+        data: file.buffer,
+      },
+      select: {
+        id: true,
+        postId: true,
+        kind: true,
+        mimeType: true,
+        fileName: true,
+        size: true,
+        createdAt: true,
+      },
+    });
+
+    return created;
+  }
+
+  async findMedia(mediaId: string) {
+    const media = await this.prisma.postMedia.findUnique({
+      where: { id: mediaId },
+      select: {
+        data: true,
+        mimeType: true,
+        size: true,
+        post: {
+          select: {
+            status: true,
+          },
+        },
+      },
+    });
+
+    if (!media || media.post.status === 'DELETED') {
+      throw new NotFoundException('El archivo no existe');
+    }
+
+    return media;
   }
 
   // Obtener todas las publicaciones
@@ -116,7 +287,8 @@ export class PostsService {
       }),
     ]);
 
-    return buildPaginatedResponse(withRatings(posts), total, options);
+    const enriched = await this.attachMediaMetadata(withRatings(posts));
+    return buildPaginatedResponse(enriched, total, options);
   }
 
   // Obtener publicaciones del usuario autenticado
@@ -139,7 +311,8 @@ export class PostsService {
       }),
     ]);
 
-    return buildPaginatedResponse(withRatings(posts), total, options);
+    const enriched = await this.attachMediaMetadata(withRatings(posts));
+    return buildPaginatedResponse(enriched, total, options);
   }
 
   async findMyStats(userId: string) {
@@ -244,7 +417,8 @@ export class PostsService {
       }),
     ]);
 
-    return buildPaginatedResponse(withRatings(posts), total, options);
+    const enriched = await this.attachMediaMetadata(withRatings(posts));
+    return buildPaginatedResponse(enriched, total, options);
   }
 
   // Obtener una publicación por ID
@@ -260,7 +434,8 @@ export class PostsService {
       throw new NotFoundException('La publicación no existe');
     }
 
-    return withRating(post);
+    const [enriched] = await this.attachMediaMetadata([withRating(post)]);
+    return enriched;
   }
 
   // Actualizar publicación
@@ -289,7 +464,8 @@ export class PostsService {
       include: postUserInclude,
     });
 
-    return withRating(updated);
+    const [enriched] = await this.attachMediaMetadata([withRating(updated)]);
+    return enriched;
   }
 
   async updateStatus(
@@ -323,7 +499,8 @@ export class PostsService {
       include: postUserInclude,
     });
 
-    return withRating(updated);
+    const [enriched] = await this.attachMediaMetadata([withRating(updated)]);
+    return enriched;
   }
 
   async updateStatusForAdmin(
@@ -350,7 +527,8 @@ export class PostsService {
       include: postUserInclude,
     });
 
-    return withRating(updated);
+    const [enriched] = await this.attachMediaMetadata([withRating(updated)]);
+    return enriched;
   }
 
   // Eliminar publicación
@@ -380,6 +558,7 @@ export class PostsService {
       },
     });
   }
+
   async search(filters: SearchPostsQueryDto) {
     const { q, category, country, state, city, minPrice, maxPrice } = filters;
 
@@ -461,6 +640,7 @@ export class PostsService {
       }),
     ]);
 
-    return buildPaginatedResponse(posts, total, filters);
+    const enriched = await this.attachMediaMetadata(withRatings(posts));
+    return buildPaginatedResponse(enriched, total, filters);
   }
 }
