@@ -8,8 +8,13 @@ import {
   Post,
   Query,
   Request,
+  Res,
+  UploadedFile,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import type { Response } from 'express';
 
 import { PostsService } from './posts.service';
 import { AdminGuard } from '../auth/guards/admin.guard';
@@ -22,6 +27,13 @@ import { MyPostsQueryDto } from './dto/my-posts-query.dto';
 import { SearchPostsQueryDto } from './dto/search-posts-query.dto';
 import { UpdatePostStatusDto } from './dto/update-post-status.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
+
+type UploadedMediaFile = {
+  buffer: Buffer;
+  mimetype: string;
+  originalname: string;
+  size: number;
+};
 
 @Controller('posts')
 export class PostsController {
@@ -76,6 +88,32 @@ export class PostsController {
       id,
       adminUpdatePostStatusDto,
     );
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post(':id/media')
+  @UseInterceptors(
+    FileInterceptor('file', {
+      limits: {
+        fileSize: 12 * 1024 * 1024,
+      },
+    }),
+  )
+  async uploadMedia(
+    @Param('id') id: string,
+    @Request() req,
+    @UploadedFile() file?: UploadedMediaFile,
+  ) {
+    return this.postsService.addMedia(id, req.user.userId, file);
+  }
+
+  @Get('media/:mediaId')
+  async getMedia(@Param('mediaId') mediaId: string, @Res() res: Response) {
+    const media = await this.postsService.findMedia(mediaId);
+    res.setHeader('Content-Type', media.mimeType);
+    res.setHeader('Content-Length', media.size.toString());
+    res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+    return res.send(media.data);
   }
 
   @Get(':id')
