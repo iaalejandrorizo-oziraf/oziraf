@@ -4,6 +4,7 @@ import {
   Delete,
   Get,
   Headers,
+  NotFoundException,
   Param,
   Patch,
   Post,
@@ -18,6 +19,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import type { Response } from 'express';
 
 import { PostsService } from './posts.service';
+import { PrismaService } from '../prisma/prisma.service';
 import { AdminGuard } from '../auth/guards/admin.guard';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { AdminListPostsQueryDto } from './dto/admin-list-posts-query.dto';
@@ -34,6 +36,13 @@ type UploadedMediaFile = {
   mimetype: string;
   originalname: string;
   size: number;
+};
+
+type CachedMedia = {
+  data: Buffer;
+  mimeType: string;
+  size: number;
+  expiresAt: number;
 };
 
 function inferMediaMimeType(file?: UploadedMediaFile) {
@@ -102,7 +111,66 @@ function parseByteRange(range: string, totalSize: number) {
 
 @Controller('posts')
 export class PostsController {
-  constructor(private postsService: PostsService) {}
+  private readonly mediaCache = new Map<string, CachedMedia>();
+  private mediaCacheBytes = 0;
+  private readonly mediaCacheLimitBytes = 64 * 1024 * 1024;
+  private readonly mediaCacheTtlMs = 90 * 1000;
+
+  constructor(
+    private postsService: PostsService,
+    private prisma: PrismaService,
+  ) {}
+
+  private removeCachedMedia(mediaId: string) {
+    const cached = this.mediaCache.get(mediaId);
+    if (!cached) return;
+    this.mediaCache.delete(mediaId);
+    this.mediaCacheBytes = Math.max(0, this.mediaCacheBytes - cached.size);
+  }
+
+  private trimMediaCache(requiredBytes: number) {
+    const now = Date.now();
+    for (const [id, cached] of this.mediaCache) {
+      if (cached.expiresAt <= now) this.removeCachedMedia(id);
+    }
+
+    while (
+      this.mediaCache.size > 0 &&
+      this.mediaCacheBytes + requiredBytes > this.mediaCacheLimitBytes
+    ) {
+      const oldestId = this.mediaCache.keys().next().value as string | undefined;
+      if (!oldestId) break;
+      this.removeCachedMedia(oldestId);
+    }
+  }
+
+  private async getCachedMedia(mediaId: string) {
+    const now = Date.now();
+    const existing = this.mediaCache.get(mediaId);
+    if (existing && existing.expiresAt > now) {
+      this.mediaCache.delete(mediaId);
+      this.mediaCache.set(mediaId, existing);
+      return existing;
+    }
+    if (existing) this.removeCachedMedia(mediaId);
+
+    const media = await this.postsService.findMedia(mediaId);
+    const data = Buffer.from(media.data);
+    const cached: CachedMedia = {
+      data,
+      mimeType: media.mimeType,
+      size: data.length,
+      expiresAt: now + this.mediaCacheTtlMs,
+    };
+
+    if (cached.size <= this.mediaCacheLimitBytes) {
+      this.trimMediaCache(cached.size);
+      this.mediaCache.set(mediaId, cached);
+      this.mediaCacheBytes += cached.size;
+    }
+
+    return cached;
+  }
 
   @UseGuards(JwtAuthGuard)
   @Post()
@@ -176,14 +244,35 @@ export class PostsController {
     );
   }
 
+  @Get('media/:mediaId/context')
+  async getMediaContext(@Param('mediaId') mediaId: string) {
+    const media = await this.prisma.postMedia.findUnique({
+      where: { id: mediaId },
+      select: {
+        postId: true,
+        post: {
+          select: {
+            status: true,
+          },
+        },
+      },
+    });
+
+    if (!media || media.post.status === 'DELETED') {
+      throw new NotFoundException('El archivo no existe');
+    }
+
+    return { postId: media.postId };
+  }
+
   @Get('media/:mediaId')
   async getMedia(
     @Param('mediaId') mediaId: string,
     @Headers('range') range: string | undefined,
     @Res() res: Response,
   ) {
-    const media = await this.postsService.findMedia(mediaId);
-    const data = Buffer.from(media.data);
+    const media = await this.getCachedMedia(mediaId);
+    const data = media.data;
     const totalSize = data.length;
 
     res.setHeader('Content-Type', media.mimeType);
