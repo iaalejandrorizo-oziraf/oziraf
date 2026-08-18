@@ -18,4 +18,170 @@ on:
           - backend-build
           - mobile-analyze
           - mobile-test
-          - mobile-build
+          - mobile-build-apk
+          - mobile-build-web
+          - all-checks
+
+jobs:
+  run:
+    name: Run ${{ github.event_name == 'push' && 'mobile-auto-deploy' || inputs.task }}
+    runs-on: [self-hosted, Windows, X64, oziraf]
+
+    defaults:
+      run:
+        shell: powershell
+
+    env:
+      TASK: ${{ github.event_name == 'push' && 'mobile-auto-deploy' || inputs.task }}
+      FLUTTER_HOME: D:\OZIRAF\tools\flutter-zip\flutter
+      ANDROID_HOME: C:\Users\aleja\AppData\Local\Android\Sdk
+      GRADLE_USER_HOME: D:\OZIRAF\tools\gradle-cache
+      TEMP: D:\OZIRAF\tools\tmp
+      TMP: D:\OZIRAF\tools\tmp
+      OZIRAF_REMOTE_API_URL: http://100.112.136.50:3001
+      OZIRAF_WEB_PUBLISH_PATH: D:\OZIRAF\mobile\build\web
+      OZIRAF_DEBUG_APK_PUBLISH_PATH: D:\OZIRAF\mobile\build\web\downloads\oziraf-debug.apk
+      OZIRAF_ARM64_APK_PUBLISH_PATH: D:\OZIRAF\mobile\build\web\downloads\oziraf-release-arm64.apk
+      OZIRAF_ARMV7_APK_PUBLISH_PATH: D:\OZIRAF\mobile\build\web\downloads\oziraf-release-armv7.apk
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Prepare local tool paths
+        run: |
+          New-Item -ItemType Directory -Force -Path $env:GRADLE_USER_HOME, $env:TEMP | Out-Null
+          "$env:FLUTTER_HOME\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          "$env:ANDROID_HOME\cmdline-tools\latest\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          "$env:ANDROID_HOME\platform-tools" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          "$env:ANDROID_HOME\emulator" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+
+      - name: Backend install
+        if: env.TASK == 'backend-test' || env.TASK == 'backend-build' || env.TASK == 'all-checks'
+        run: npm ci
+
+      - name: Backend test
+        if: env.TASK == 'backend-test' || env.TASK == 'all-checks'
+        run: npm run test -- --runInBand
+
+      - name: Backend build
+        if: env.TASK == 'backend-build' || env.TASK == 'all-checks'
+        run: npm run build
+
+      - name: Flutter doctor
+        if: startsWith(env.TASK, 'mobile-') || env.TASK == 'all-checks'
+        working-directory: mobile
+        run: flutter doctor -v
+
+      - name: Flutter pub get
+        if: startsWith(env.TASK, 'mobile-') || env.TASK == 'all-checks'
+        working-directory: mobile
+        run: flutter pub get
+
+      - name: Mobile analyze
+        if: env.TASK == 'mobile-analyze' || env.TASK == 'mobile-auto-deploy' || env.TASK == 'all-checks'
+        working-directory: mobile
+        run: flutter analyze
+
+      - name: Mobile test
+        if: env.TASK == 'mobile-test' || env.TASK == 'all-checks'
+        working-directory: mobile
+        run: flutter test
+
+      - name: Mobile build debug APK
+        if: env.TASK == 'mobile-build-apk'
+        working-directory: mobile
+        run: |
+          flutter build apk --debug `
+            "--dart-define=OZIRAF_API_URL=$env:OZIRAF_REMOTE_API_URL" `
+            "--dart-define=OZIRAF_ANDROID_API_URL=$env:OZIRAF_REMOTE_API_URL"
+
+      - name: Mobile build split release APKs
+        if: env.TASK == 'mobile-build-apk' || env.TASK == 'mobile-auto-deploy'
+        working-directory: mobile
+        run: |
+          flutter build apk --release --split-per-abi `
+            "--dart-define=OZIRAF_API_URL=$env:OZIRAF_REMOTE_API_URL" `
+            "--dart-define=OZIRAF_ANDROID_API_URL=$env:OZIRAF_REMOTE_API_URL"
+
+      - name: Mobile build web
+        if: env.TASK == 'mobile-build-web' || env.TASK == 'mobile-auto-deploy'
+        working-directory: mobile
+        run: |
+          flutter build web --debug `
+            "--dart-define=OZIRAF_API_URL=$env:OZIRAF_REMOTE_API_URL"
+
+      - name: Publish web to OZIRAF local server
+        if: env.TASK == 'mobile-build-web' || env.TASK == 'mobile-auto-deploy'
+        working-directory: mobile
+        run: |
+          $source = Join-Path $PWD 'build\web'
+          $destination = $env:OZIRAF_WEB_PUBLISH_PATH
+          if (-not (Test-Path $source)) {
+            throw "Web build not found at $source"
+          }
+          New-Item -ItemType Directory -Force -Path $destination | Out-Null
+          Get-ChildItem -Path $source | ForEach-Object {
+            Copy-Item -Path $_.FullName -Destination $destination -Recurse -Force
+          }
+          Write-Host "Published web build to $destination"
+
+      - name: Publish split release APKs
+        if: env.TASK == 'mobile-build-apk' || env.TASK == 'mobile-auto-deploy'
+        working-directory: mobile
+        run: |
+          $arm64Source = Join-Path $PWD 'build\app\outputs\flutter-apk\app-arm64-v8a-release.apk'
+          $armv7Source = Join-Path $PWD 'build\app\outputs\flutter-apk\app-armeabi-v7a-release.apk'
+
+          if (-not (Test-Path $arm64Source)) {
+            throw "ARM64 APK not found at $arm64Source"
+          }
+          if (-not (Test-Path $armv7Source)) {
+            throw "ARMv7 APK not found at $armv7Source"
+          }
+
+          New-Item -ItemType Directory -Force -Path (Split-Path $env:OZIRAF_ARM64_APK_PUBLISH_PATH -Parent) | Out-Null
+          Copy-Item -Path $arm64Source -Destination $env:OZIRAF_ARM64_APK_PUBLISH_PATH -Force
+          Copy-Item -Path $armv7Source -Destination $env:OZIRAF_ARMV7_APK_PUBLISH_PATH -Force
+
+          $arm64 = Get-Item $env:OZIRAF_ARM64_APK_PUBLISH_PATH
+          $armv7 = Get-Item $env:OZIRAF_ARMV7_APK_PUBLISH_PATH
+          Write-Host "ARM64 APK: $($arm64.FullName) - $([math]::Round($arm64.Length / 1MB, 2)) MB"
+          Write-Host "ARMv7 APK: $($armv7.FullName) - $([math]::Round($armv7.Length / 1MB, 2)) MB"
+
+      - name: Publish debug APK
+        if: env.TASK == 'mobile-build-apk'
+        working-directory: mobile
+        run: |
+          $debugSource = Join-Path $PWD 'build\app\outputs\flutter-apk\app-debug.apk'
+          if (-not (Test-Path $debugSource)) {
+            throw "Debug APK not found at $debugSource"
+          }
+          Copy-Item -Path $debugSource -Destination $env:OZIRAF_DEBUG_APK_PUBLISH_PATH -Force
+
+      - name: Upload ARM64 release artifact
+        if: env.TASK == 'mobile-build-apk' || env.TASK == 'mobile-auto-deploy'
+        uses: actions/upload-artifact@v4
+        with:
+          name: oziraf-release-arm64
+          path: mobile/build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload ARMv7 release artifact
+        if: env.TASK == 'mobile-build-apk' || env.TASK == 'mobile-auto-deploy'
+        uses: actions/upload-artifact@v4
+        with:
+          name: oziraf-release-armv7
+          path: mobile/build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload debug APK artifact
+        if: env.TASK == 'mobile-build-apk'
+        uses: actions/upload-artifact@v4
+        with:
+          name: oziraf-debug-apk
+          path: mobile/build/app/outputs/flutter-apk/app-debug.apk
+          if-no-files-found: error
+          retention-days: 14
