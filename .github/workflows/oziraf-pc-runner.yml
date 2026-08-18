@@ -38,6 +38,7 @@ jobs:
       GRADLE_USER_HOME: D:\OZIRAF\tools\gradle-cache
       TEMP: D:\OZIRAF\tools\tmp
       TMP: D:\OZIRAF\tools\tmp
+      OZIRAF_REMOTE_API_URL: http://100.112.136.50:3001
       OZIRAF_WEB_PUBLISH_PATH: D:\OZIRAF\mobile\build\web
       OZIRAF_APK_PUBLISH_PATH: D:\OZIRAF\mobile\build\web\downloads\oziraf-debug.apk
 
@@ -88,12 +89,17 @@ jobs:
       - name: Mobile build APK
         if: env.TASK == 'mobile-build-apk' || env.TASK == 'mobile-auto-deploy'
         working-directory: mobile
-        run: flutter build apk --debug
+        run: |
+          flutter build apk --debug `
+            "--dart-define=OZIRAF_API_URL=$env:OZIRAF_REMOTE_API_URL" `
+            "--dart-define=OZIRAF_ANDROID_API_URL=$env:OZIRAF_REMOTE_API_URL"
 
       - name: Mobile build web
         if: env.TASK == 'mobile-build-web' || env.TASK == 'mobile-auto-deploy'
         working-directory: mobile
-        run: flutter build web --debug
+        run: |
+          flutter build web --debug `
+            "--dart-define=OZIRAF_API_URL=$env:OZIRAF_REMOTE_API_URL"
 
       - name: Publish web to OZIRAF local server
         if: env.TASK == 'mobile-build-web' || env.TASK == 'mobile-auto-deploy'
