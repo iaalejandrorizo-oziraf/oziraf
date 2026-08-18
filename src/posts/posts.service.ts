@@ -236,7 +236,7 @@ export class PostsService {
         mimeType: file.mimetype,
         fileName: file.originalname || null,
         size: file.size,
-        data: file.buffer,
+        data: Uint8Array.from(file.buffer),
       },
       select: {
         id: true,
