@@ -132,9 +132,10 @@ export class AuthService {
       expiresAt,
     );
 
+    // The raw token must be delivered out-of-band (for example by email),
+    // never returned to the requesting client.
     return {
       message: PASSWORD_RESET_MESSAGE,
-      resetToken,
     };
   }
 
@@ -186,9 +187,9 @@ export class AuthService {
       expiresAt,
     );
 
+    // The verification token must be delivered out-of-band.
     return {
       message: EMAIL_VERIFICATION_MESSAGE,
-      verificationToken,
     };
   }
 
