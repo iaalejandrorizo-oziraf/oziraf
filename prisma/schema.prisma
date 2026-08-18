@@ -63,6 +63,21 @@ model Post {
   leads        ContactLead[]
   reports      PostReport[]
   reviews      Review[]
+  media        PostMedia[]
+}
+
+model PostMedia {
+  id        String   @id @default(cuid())
+  postId    String
+  kind      String
+  mimeType  String
+  fileName  String?
+  size      Int
+  data      Bytes
+  createdAt DateTime @default(now())
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@index([postId])
 }
 
 model Review {
