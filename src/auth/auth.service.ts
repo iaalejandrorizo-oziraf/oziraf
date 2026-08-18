@@ -44,6 +44,7 @@ export class AuthService {
       password: hashedPassword,
       firstName: registerDto.firstName,
       lastName: registerDto.lastName,
+      accountType: registerDto.accountType,
       phone: registerDto.phone,
       city: registerDto.city,
       state: registerDto.state,
@@ -194,7 +195,9 @@ export class AuthService {
   async confirmEmailVerification(
     confirmEmailVerificationDto: ConfirmEmailVerificationDto,
   ) {
-    const tokenHash = hashToken(confirmEmailVerificationDto.token);
+    const tokenHash = createHash('sha256')
+      .update(confirmEmailVerificationDto.token)
+      .digest('hex');
     const verificationToken =
       await this.usersService.findEmailVerificationToken(tokenHash);
 
