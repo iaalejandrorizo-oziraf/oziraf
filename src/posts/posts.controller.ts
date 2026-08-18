@@ -3,6 +3,7 @@ import {
   Controller,
   Delete,
   Get,
+  Headers,
   Param,
   Patch,
   Post,
@@ -61,6 +62,42 @@ function inferMediaMimeType(file?: UploadedMediaFile) {
     ...file,
     mimetype: inferred,
   };
+}
+
+function parseByteRange(range: string, totalSize: number) {
+  const match = /^bytes=(\d*)-(\d*)$/.exec(range.trim());
+  if (!match) return null;
+
+  const rawStart = match[1];
+  const rawEnd = match[2];
+
+  if (!rawStart && !rawEnd) return null;
+
+  let start: number;
+  let end: number;
+
+  if (!rawStart) {
+    const suffixLength = Number(rawEnd);
+    if (!Number.isFinite(suffixLength) || suffixLength <= 0) return null;
+    start = Math.max(totalSize - suffixLength, 0);
+    end = totalSize - 1;
+  } else {
+    start = Number(rawStart);
+    end = rawEnd ? Number(rawEnd) : totalSize - 1;
+  }
+
+  if (
+    !Number.isInteger(start) ||
+    !Number.isInteger(end) ||
+    start < 0 ||
+    end < start ||
+    start >= totalSize
+  ) {
+    return null;
+  }
+
+  end = Math.min(end, totalSize - 1);
+  return { start, end };
 }
 
 @Controller('posts')
@@ -140,12 +177,38 @@ export class PostsController {
   }
 
   @Get('media/:mediaId')
-  async getMedia(@Param('mediaId') mediaId: string, @Res() res: Response) {
+  async getMedia(
+    @Param('mediaId') mediaId: string,
+    @Headers('range') range: string | undefined,
+    @Res() res: Response,
+  ) {
     const media = await this.postsService.findMedia(mediaId);
+    const data = Buffer.from(media.data);
+    const totalSize = data.length;
+
     res.setHeader('Content-Type', media.mimeType);
-    res.setHeader('Content-Length', media.size.toString());
+    res.setHeader('Accept-Ranges', 'bytes');
+    res.setHeader('Content-Disposition', 'inline');
     res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
-    return res.send(media.data);
+
+    if (range) {
+      const parsed = parseByteRange(range, totalSize);
+      if (!parsed) {
+        res.status(416);
+        res.setHeader('Content-Range', `bytes */${totalSize}`);
+        return res.end();
+      }
+
+      const { start, end } = parsed;
+      const chunk = data.subarray(start, end + 1);
+      res.status(206);
+      res.setHeader('Content-Range', `bytes ${start}-${end}/${totalSize}`);
+      res.setHeader('Content-Length', chunk.length.toString());
+      return res.send(chunk);
+    }
+
+    res.setHeader('Content-Length', totalSize.toString());
+    return res.send(data);
   }
 
   @Get(':id')
