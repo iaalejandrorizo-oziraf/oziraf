@@ -15,6 +15,7 @@ model User {
   lastName                String?
   phone                   String?
   role                    String                   @default("USER")
+  accountType             String                   @default("SOLICITANTE")
   createdAt               DateTime                 @default(now())
   updatedAt               DateTime                 @updatedAt
   emailVerified           Boolean                  @default(false)
