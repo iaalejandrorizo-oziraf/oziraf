@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:url_launcher/url_launcher.dart';
 
 import 'auth_session.dart';
 
@@ -292,7 +293,7 @@ class _OzirafHomeState extends State<OzirafHome> {
             : const PlaceholderPanel(
                 icon: Icons.add_business_outlined,
                 title: 'Publicar servicio',
-                message: 'Tu cuenta ya está en modo Anunciante. El formulario de publicación será el siguiente bloque.',
+                message: 'Usa el botón Publicar para crear un anuncio con fotos y video.',
               );
       case OzirafTab.cuenta:
         return AccountScreen(
@@ -385,8 +386,8 @@ class _SearchScreenState extends State<SearchScreen> {
     final q = searchController.text.trim().toLowerCase();
     final city = cityController.text.trim().toLowerCase();
     return posts.where((post) {
-      final text = '${post.title} ${post.description} ${post.category}'.toLowerCase();
-      return (q.isEmpty || text.contains(q)) &&
+      final value = '${post.title} ${post.description} ${post.category}'.toLowerCase();
+      return (q.isEmpty || value.contains(q)) &&
           (city.isEmpty || post.city.toLowerCase().contains(city));
     }).toList();
   }
@@ -526,6 +527,31 @@ class _MyPostsScreenState extends State<MyPostsScreen> {
   }
 }
 
+class PostMediaItem {
+  const PostMediaItem({
+    required this.id,
+    required this.kind,
+    required this.mimeType,
+  });
+
+  final String id;
+  final String kind;
+  final String mimeType;
+
+  bool get isImage => kind.toUpperCase() == 'IMAGE';
+  bool get isVideo => kind.toUpperCase() == 'VIDEO';
+
+  String get url => '${OzirafApiClient.baseUrl}/posts/media/$id';
+
+  factory PostMediaItem.fromJson(Map<String, dynamic> json) {
+    return PostMediaItem(
+      id: text(json['id']),
+      kind: text(json['kind']),
+      mimeType: text(json['mimeType']),
+    );
+  }
+}
+
 class ServiceCard extends StatelessWidget {
   const ServiceCard({super.key, required this.post, this.owned = false});
   final ServicePost post;
@@ -533,6 +559,9 @@ class ServiceCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final images = post.media.where((item) => item.isImage).toList();
+    final videos = post.media.where((item) => item.isVideo).toList();
+
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: Padding(
@@ -542,37 +571,196 @@ class ServiceCard extends StatelessWidget {
           children: [
             Row(
               children: [
+                _ProviderAvatar(
+                  photo: post.providerPhoto,
+                  name: post.providerName,
+                  size: 42,
+                ),
+                const SizedBox(width: 10),
                 Expanded(
-                  child: Text(
-                    post.title,
-                    style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w900),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        post.providerName,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontWeight: FontWeight.w900),
+                      ),
+                      Text(
+                        post.category,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: OzirafColors.primaryStrong,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                if (owned)
-                  const Chip(label: Text('Tu anuncio')),
+                if (owned) const Chip(label: Text('Tu anuncio')),
               ],
             ),
-            const SizedBox(height: 6),
-            Text(post.description, style: const TextStyle(color: OzirafColors.muted)),
+            const SizedBox(height: 12),
+            Text(
+              post.title,
+              style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w900),
+            ),
+            if (images.isNotEmpty) ...[
+              const SizedBox(height: 10),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(14),
+                child: SizedBox(
+                  height: 190,
+                  child: PageView.builder(
+                    itemCount: images.length,
+                    itemBuilder: (context, index) {
+                      return Image.network(
+                        images[index].url,
+                        width: double.infinity,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, _, _) => Container(
+                          color: OzirafColors.surfaceSoft,
+                          alignment: Alignment.center,
+                          child: const Icon(Icons.broken_image_outlined, size: 42),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ),
+              if (images.length > 1) ...[
+                const SizedBox(height: 5),
+                Text(
+                  '${images.length} fotos • desliza para verlas',
+                  style: const TextStyle(
+                    color: OzirafColors.muted,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ],
+            if (videos.isNotEmpty) ...[
+              const SizedBox(height: 10),
+              OutlinedButton.icon(
+                onPressed: () async {
+                  final uri = Uri.parse(videos.first.url);
+                  final opened = await launchUrl(
+                    uri,
+                    mode: LaunchMode.externalApplication,
+                  );
+                  if (!opened && context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('No se pudo abrir el video.')),
+                    );
+                  }
+                },
+                icon: const Icon(Icons.play_circle_outline),
+                label: const Text('Ver video del trabajo'),
+              ),
+            ],
+            const SizedBox(height: 8),
+            Text(
+              post.description,
+              style: const TextStyle(color: OzirafColors.muted),
+            ),
             const SizedBox(height: 10),
             Row(
               children: [
                 const Icon(Icons.location_on_outlined, size: 17),
                 const SizedBox(width: 4),
                 Expanded(child: Text('${post.city}, ${post.state}')),
-                Text(post.price, style: const TextStyle(fontWeight: FontWeight.w900)),
+                Text(
+                  post.price,
+                  style: const TextStyle(fontWeight: FontWeight.w900),
+                ),
               ],
-            ),
-            const SizedBox(height: 6),
-            Text(
-              '${post.category} • ${post.providerName}',
-              style: const TextStyle(color: OzirafColors.primaryStrong, fontWeight: FontWeight.w700),
             ),
           ],
         ),
       ),
     );
   }
+}
+
+class _ProviderAvatar extends StatelessWidget {
+  const _ProviderAvatar({
+    required this.photo,
+    required this.name,
+    required this.size,
+  });
+
+  final String photo;
+  final String name;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    final fallback = Container(
+      width: size,
+      height: size,
+      alignment: Alignment.center,
+      decoration: const BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: LinearGradient(
+          colors: [OzirafColors.logoPrimary, OzirafColors.logoAccent],
+        ),
+      ),
+      child: Text(
+        _initials(name),
+        style: TextStyle(
+          color: Colors.white,
+          fontWeight: FontWeight.w900,
+          fontSize: size * .32,
+        ),
+      ),
+    );
+
+    if (photo.trim().isEmpty) return fallback;
+
+    if (photo.startsWith('data:image/')) {
+      try {
+        final comma = photo.indexOf(',');
+        if (comma < 0) return fallback;
+        final bytes = base64Decode(photo.substring(comma + 1));
+        return ClipOval(
+          child: Image.memory(
+            bytes,
+            width: size,
+            height: size,
+            fit: BoxFit.cover,
+            errorBuilder: (_, _, _) => fallback,
+          ),
+        );
+      } catch (_) {
+        return fallback;
+      }
+    }
+
+    return ClipOval(
+      child: Image.network(
+        photo,
+        width: size,
+        height: size,
+        fit: BoxFit.cover,
+        errorBuilder: (_, _, _) => fallback,
+      ),
+    );
+  }
+}
+
+String _initials(String name) {
+  final parts = name
+      .trim()
+      .split(RegExp(r'\s+'))
+      .where((part) => part.isNotEmpty)
+      .toList();
+  if (parts.isEmpty) return 'O';
+  if (parts.length == 1) return parts.first.substring(0, 1).toUpperCase();
+  return '${parts.first.substring(0, 1)}${parts.last.substring(0, 1)}'
+      .toUpperCase();
 }
 
 class AccountScreen extends StatefulWidget {
@@ -695,7 +883,12 @@ class _AccountScreenState extends State<AccountScreen> {
       return ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          Text('Mi cuenta', style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w900)),
+          Text(
+            'Mi cuenta',
+            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.w900,
+                ),
+          ),
           const SizedBox(height: 14),
           Card(
             child: Padding(
@@ -703,12 +896,23 @@ class _AccountScreenState extends State<AccountScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(profile.fullName, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900)),
+                  Text(
+                    profile.fullName,
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
                   const SizedBox(height: 4),
-                  Text(profile.email, style: const TextStyle(color: OzirafColors.muted)),
+                  Text(
+                    profile.email,
+                    style: const TextStyle(color: OzirafColors.muted),
+                  ),
                   if (profile.city.isNotEmpty || profile.state.isNotEmpty) ...[
                     const SizedBox(height: 4),
-                    Text('${profile.city}${profile.city.isNotEmpty && profile.state.isNotEmpty ? ', ' : ''}${profile.state}'),
+                    Text(
+                      '${profile.city}${profile.city.isNotEmpty && profile.state.isNotEmpty ? ', ' : ''}${profile.state}',
+                    ),
                   ],
                   const SizedBox(height: 14),
                   AccountBadge(type: profile.accountType),
@@ -717,7 +921,12 @@ class _AccountScreenState extends State<AccountScreen> {
             ),
           ),
           const SizedBox(height: 14),
-          Text('Usar OZIRAF como', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900)),
+          Text(
+            'Usar OZIRAF como',
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w900,
+                ),
+          ),
           const SizedBox(height: 8),
           SegmentedButton<OzirafAccountType>(
             segments: const [
@@ -733,7 +942,8 @@ class _AccountScreenState extends State<AccountScreen> {
               ),
             ],
             selected: {profile.accountType},
-            onSelectionChanged: (selection) => widget.onAccountTypeChanged(selection.first),
+            onSelectionChanged: (selection) =>
+                widget.onAccountTypeChanged(selection.first),
           ),
           const SizedBox(height: 10),
           Text(
@@ -757,7 +967,9 @@ class _AccountScreenState extends State<AccountScreen> {
       children: [
         Text(
           registerMode ? 'Crear cuenta' : 'Iniciar sesión',
-          style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w900),
+          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.w900,
+              ),
         ),
         const SizedBox(height: 6),
         Text(
@@ -772,8 +984,19 @@ class _AccountScreenState extends State<AccountScreen> {
             key: loginKey,
             child: Column(
               children: [
-                OzirafField(controller: email, label: 'Correo', icon: Icons.email_outlined, validator: emailValidator),
-                OzirafField(controller: password, label: 'Contraseña', icon: Icons.lock_outline, obscure: true, validator: passwordValidator),
+                OzirafField(
+                  controller: email,
+                  label: 'Correo',
+                  icon: Icons.email_outlined,
+                  validator: emailValidator,
+                ),
+                OzirafField(
+                  controller: password,
+                  label: 'Contraseña',
+                  icon: Icons.lock_outline,
+                  obscure: true,
+                  validator: passwordValidator,
+                ),
                 SizedBox(
                   width: double.infinity,
                   child: FilledButton.icon(
@@ -792,19 +1015,56 @@ class _AccountScreenState extends State<AccountScreen> {
               children: [
                 SegmentedButton<OzirafAccountType>(
                   segments: const [
-                    ButtonSegment(value: OzirafAccountType.solicitante, label: Text('Solicitante'), icon: Icon(Icons.search)),
-                    ButtonSegment(value: OzirafAccountType.anunciante, label: Text('Anunciante'), icon: Icon(Icons.campaign_outlined)),
+                    ButtonSegment(
+                      value: OzirafAccountType.solicitante,
+                      label: Text('Solicitante'),
+                      icon: Icon(Icons.search),
+                    ),
+                    ButtonSegment(
+                      value: OzirafAccountType.anunciante,
+                      label: Text('Anunciante'),
+                      icon: Icon(Icons.campaign_outlined),
+                    ),
                   ],
                   selected: {newAccountType},
-                  onSelectionChanged: (value) => setState(() => newAccountType = value.first),
+                  onSelectionChanged: (value) =>
+                      setState(() => newAccountType = value.first),
                 ),
                 const SizedBox(height: 14),
-                OzirafField(controller: firstName, label: 'Nombre', icon: Icons.person_outline, validator: requiredValidator),
-                OzirafField(controller: lastName, label: 'Apellido', icon: Icons.badge_outlined),
-                OzirafField(controller: registerEmail, label: 'Correo', icon: Icons.email_outlined, validator: emailValidator),
-                OzirafField(controller: registerPassword, label: 'Contraseña', icon: Icons.lock_outline, obscure: true, validator: passwordValidator),
-                OzirafField(controller: city, label: 'Ciudad', icon: Icons.location_city_outlined),
-                OzirafField(controller: state, label: 'Estado', icon: Icons.map_outlined),
+                OzirafField(
+                  controller: firstName,
+                  label: 'Nombre',
+                  icon: Icons.person_outline,
+                  validator: requiredValidator,
+                ),
+                OzirafField(
+                  controller: lastName,
+                  label: 'Apellido',
+                  icon: Icons.badge_outlined,
+                ),
+                OzirafField(
+                  controller: registerEmail,
+                  label: 'Correo',
+                  icon: Icons.email_outlined,
+                  validator: emailValidator,
+                ),
+                OzirafField(
+                  controller: registerPassword,
+                  label: 'Contraseña',
+                  icon: Icons.lock_outline,
+                  obscure: true,
+                  validator: passwordValidator,
+                ),
+                OzirafField(
+                  controller: city,
+                  label: 'Ciudad',
+                  icon: Icons.location_city_outlined,
+                ),
+                OzirafField(
+                  controller: state,
+                  label: 'Estado',
+                  icon: Icons.map_outlined,
+                ),
                 SizedBox(
                   width: double.infinity,
                   child: FilledButton.icon(
@@ -828,7 +1088,10 @@ class _AccountScreenState extends State<AccountScreen> {
         ),
         if (message != null) ...[
           const SizedBox(height: 8),
-          Text(message!, style: const TextStyle(fontWeight: FontWeight.w700)),
+          Text(
+            message!,
+            style: const TextStyle(fontWeight: FontWeight.w700),
+          ),
         ],
       ],
     );
@@ -942,9 +1205,17 @@ class PlaceholderPanel extends StatelessWidget {
               children: [
                 Icon(icon, size: 38, color: OzirafColors.primary),
                 const SizedBox(height: 14),
-                Text(title, style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w900)),
+                Text(
+                  title,
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.w900,
+                      ),
+                ),
                 const SizedBox(height: 8),
-                Text(message, style: const TextStyle(color: OzirafColors.muted)),
+                Text(
+                  message,
+                  style: const TextStyle(color: OzirafColors.muted),
+                ),
               ],
             ),
           ),
@@ -955,18 +1226,30 @@ class PlaceholderPanel extends StatelessWidget {
 }
 
 class LoginRequiredPanel extends StatelessWidget {
-  const LoginRequiredPanel({super.key, required this.title, required this.message});
+  const LoginRequiredPanel({
+    super.key,
+    required this.title,
+    required this.message,
+  });
   final String title;
   final String message;
 
   @override
   Widget build(BuildContext context) {
-    return PlaceholderPanel(icon: Icons.lock_outline, title: title, message: message);
+    return PlaceholderPanel(
+      icon: Icons.lock_outline,
+      title: title,
+      message: message,
+    );
   }
 }
 
 class ErrorPanel extends StatelessWidget {
-  const ErrorPanel({super.key, required this.message, required this.onRetry});
+  const ErrorPanel({
+    super.key,
+    required this.message,
+    required this.onRetry,
+  });
   final String message;
   final Future<void> Function() onRetry;
 
@@ -981,7 +1264,10 @@ class ErrorPanel extends StatelessWidget {
             const SizedBox(height: 10),
             Text(message, textAlign: TextAlign.center),
             const SizedBox(height: 10),
-            FilledButton.tonal(onPressed: onRetry, child: const Text('Reintentar')),
+            FilledButton.tonal(
+              onPressed: onRetry,
+              child: const Text('Reintentar'),
+            ),
           ],
         ),
       ),
@@ -999,6 +1285,8 @@ class ServicePost {
     required this.state,
     required this.price,
     required this.providerName,
+    required this.providerPhoto,
+    required this.media,
   });
 
   final String id;
@@ -1009,12 +1297,23 @@ class ServicePost {
   final String state;
   final String price;
   final String providerName;
+  final String providerPhoto;
+  final List<PostMediaItem> media;
 
   factory ServicePost.fromJson(Map<String, dynamic> json) {
     final user = json['user'] is Map<String, dynamic>
         ? json['user'] as Map<String, dynamic>
         : <String, dynamic>{};
     final provider = '${text(user['firstName'])} ${text(user['lastName'])}'.trim();
+    final rawMedia = json['media'];
+    final media = rawMedia is List
+        ? rawMedia
+            .whereType<Map<String, dynamic>>()
+            .map(PostMediaItem.fromJson)
+            .where((item) => item.id.isNotEmpty)
+            .toList()
+        : <PostMediaItem>[];
+
     return ServicePost(
       id: text(json['id']),
       title: text(json['title'], fallback: 'Servicio OZIRAF'),
@@ -1024,6 +1323,8 @@ class ServicePost {
       state: text(json['state'], fallback: 'Estado'),
       price: formatPrice(json['price']),
       providerName: provider.isEmpty ? 'Anunciante OZIRAF' : provider,
+      providerPhoto: text(user['profilePhoto']),
+      media: media,
     );
   }
 }
@@ -1086,7 +1387,9 @@ class OzirafApiClient {
         .timeout(const Duration(seconds: 10));
     final payload = decodePayload(response.body);
     ensureSuccess(response.statusCode, payload);
-    if (payload is Map<String, dynamic>) return OzirafProfile.fromJson(payload);
+    if (payload is Map<String, dynamic>) {
+      return OzirafProfile.fromJson(payload);
+    }
     throw Exception('No se pudo cargar el perfil.');
   }
 
