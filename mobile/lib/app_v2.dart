@@ -3,9 +3,9 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:url_launcher/url_launcher.dart';
 
 import 'auth_session.dart';
+import 'post_video_dialog.dart';
 
 class OzirafApp extends StatefulWidget {
   const OzirafApp({super.key});
@@ -645,18 +645,11 @@ class ServiceCard extends StatelessWidget {
             if (videos.isNotEmpty) ...[
               const SizedBox(height: 10),
               OutlinedButton.icon(
-                onPressed: () async {
-                  final uri = Uri.parse(videos.first.url);
-                  final opened = await launchUrl(
-                    uri,
-                    mode: LaunchMode.externalApplication,
-                  );
-                  if (!opened && context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('No se pudo abrir el video.')),
-                    );
-                  }
-                },
+                onPressed: () => showPostVideoDialog(
+                  context,
+                  url: videos.first.url,
+                  title: post.title,
+                ),
                 icon: const Icon(Icons.play_circle_outline),
                 label: const Text('Ver video del trabajo'),
               ),
