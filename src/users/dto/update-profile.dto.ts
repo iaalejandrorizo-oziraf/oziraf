@@ -1,4 +1,11 @@
-import { IsIn, IsOptional, IsString, IsUrl, MaxLength } from 'class-validator';
+import {
+  IsIn,
+  IsOptional,
+  IsString,
+  IsUrl,
+  Matches,
+  MaxLength,
+} from 'class-validator';
 import { Trim } from '../../common/decorators/trim.decorator';
 
 export class UpdateProfileDto {
@@ -57,8 +64,14 @@ export class UpdateProfileDto {
   @IsOptional()
   @Trim()
   @IsString()
-  @IsUrl({ require_protocol: true })
-  @MaxLength(500)
+  @MaxLength(90_000)
+  @Matches(
+    /^(https?:\/\/|data:image\/(?:jpeg|png|webp);base64,)/i,
+    {
+      message:
+        'profilePhoto debe ser una URL http(s) o una imagen JPEG/PNG/WebP válida',
+    },
+  )
   profilePhoto?: string;
 
   @IsOptional()
