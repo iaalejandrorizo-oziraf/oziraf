@@ -35,6 +35,34 @@ type UploadedMediaFile = {
   size: number;
 };
 
+function inferMediaMimeType(file?: UploadedMediaFile) {
+  if (!file || (file.mimetype && file.mimetype !== 'application/octet-stream')) {
+    return file;
+  }
+
+  const name = file.originalname.toLowerCase();
+  const inferred = name.endsWith('.jpg') || name.endsWith('.jpeg')
+    ? 'image/jpeg'
+    : name.endsWith('.png')
+      ? 'image/png'
+      : name.endsWith('.webp')
+        ? 'image/webp'
+        : name.endsWith('.mp4')
+          ? 'video/mp4'
+          : name.endsWith('.mov')
+            ? 'video/quicktime'
+            : name.endsWith('.webm')
+              ? 'video/webm'
+              : name.endsWith('.3gp')
+                ? 'video/3gpp'
+                : file.mimetype;
+
+  return {
+    ...file,
+    mimetype: inferred,
+  };
+}
+
 @Controller('posts')
 export class PostsController {
   constructor(private postsService: PostsService) {}
@@ -104,7 +132,11 @@ export class PostsController {
     @Request() req,
     @UploadedFile() file?: UploadedMediaFile,
   ) {
-    return this.postsService.addMedia(id, req.user.userId, file);
+    return this.postsService.addMedia(
+      id,
+      req.user.userId,
+      inferMediaMimeType(file),
+    );
   }
 
   @Get('media/:mediaId')
