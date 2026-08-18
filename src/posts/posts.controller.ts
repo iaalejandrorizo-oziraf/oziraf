@@ -5,6 +5,7 @@ import {
   Get,
   Headers,
   NotFoundException,
+  Optional,
   Param,
   Patch,
   Post,
@@ -118,7 +119,7 @@ export class PostsController {
 
   constructor(
     private postsService: PostsService,
-    private prisma: PrismaService,
+    @Optional() private prisma?: PrismaService,
   ) {}
 
   private removeCachedMedia(mediaId: string) {
@@ -246,6 +247,10 @@ export class PostsController {
 
   @Get('media/:mediaId/context')
   async getMediaContext(@Param('mediaId') mediaId: string) {
+    if (!this.prisma) {
+      throw new NotFoundException('El archivo no existe');
+    }
+
     const media = await this.prisma.postMedia.findUnique({
       where: { id: mediaId },
       select: {
