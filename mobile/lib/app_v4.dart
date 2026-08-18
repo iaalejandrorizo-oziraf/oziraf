@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:image_picker/image_picker.dart';
 
 import 'app_v2.dart' as api;
 import 'app_v3.dart' as core;
@@ -103,10 +104,15 @@ class _ProfileHeader extends StatelessWidget {
 }
 
 class _ProfileAvatar extends StatelessWidget {
-  const _ProfileAvatar({required this.profile, required this.size});
+  const _ProfileAvatar({
+    required this.profile,
+    required this.size,
+    this.photoOverride,
+  });
 
   final OzirafProfile profile;
   final double size;
+  final String? photoOverride;
 
   @override
   Widget build(BuildContext context) {
@@ -130,8 +136,27 @@ class _ProfileAvatar extends StatelessWidget {
       ),
     );
 
-    final photo = profile.profilePhoto.trim();
+    final photo = (photoOverride ?? profile.profilePhoto).trim();
     if (photo.isEmpty) return fallback;
+
+    if (photo.startsWith('data:image/')) {
+      try {
+        final comma = photo.indexOf(',');
+        if (comma < 0) return fallback;
+        final bytes = base64Decode(photo.substring(comma + 1));
+        return ClipOval(
+          child: Image.memory(
+            bytes,
+            width: size,
+            height: size,
+            fit: BoxFit.cover,
+            errorBuilder: (_, _, _) => fallback,
+          ),
+        );
+      } catch (_) {
+        return fallback;
+      }
+    }
 
     return ClipOval(
       child: Image.network(
@@ -155,10 +180,56 @@ Future<void> _showEditProfileDialog(
   final state = TextEditingController(text: profile.state);
   final profession = TextEditingController(text: profile.profession);
   final phone = TextEditingController(text: profile.phone);
-  final photo = TextEditingController(text: profile.profilePhoto);
   final formKey = GlobalKey<FormState>();
+  final picker = ImagePicker();
+  var selectedPhoto = profile.profilePhoto;
   var saving = false;
+  var pickingPhoto = false;
   String? message;
+
+  Future<void> pickPhoto(ImageSource source, StateSetter setDialogState) async {
+    if (pickingPhoto) return;
+    setDialogState(() {
+      pickingPhoto = true;
+      message = null;
+    });
+
+    try {
+      final image = await picker.pickImage(
+        source: source,
+        maxWidth: 256,
+        maxHeight: 256,
+        imageQuality: 65,
+      );
+      if (image == null) return;
+
+      final bytes = await image.readAsBytes();
+      final lowerName = image.name.toLowerCase();
+      final mimeType = lowerName.endsWith('.png')
+          ? 'image/png'
+          : lowerName.endsWith('.webp')
+              ? 'image/webp'
+              : 'image/jpeg';
+      final dataUrl = 'data:$mimeType;base64,${base64Encode(bytes)}';
+
+      if (dataUrl.length > 88_000) {
+        throw Exception(
+          'La foto quedó demasiado grande. Elige otra imagen o usa una foto con menos detalle.',
+        );
+      }
+
+      setDialogState(() {
+        selectedPhoto = dataUrl;
+        message = 'Foto lista. Presiona Guardar para aplicarla.';
+      });
+    } catch (e) {
+      setDialogState(() {
+        message = e.toString().replaceFirst('Exception: ', '');
+      });
+    } finally {
+      setDialogState(() => pickingPhoto = false);
+    }
+  }
 
   try {
     await showDialog<void>(
@@ -169,7 +240,11 @@ Future<void> _showEditProfileDialog(
             return AlertDialog(
               title: Row(
                 children: [
-                  _ProfileAvatar(profile: profile, size: 44),
+                  _ProfileAvatar(
+                    profile: profile,
+                    size: 52,
+                    photoOverride: selectedPhoto,
+                  ),
                   const SizedBox(width: 10),
                   const Expanded(child: Text('Editar perfil')),
                 ],
@@ -182,6 +257,58 @@ Future<void> _showEditProfileDialog(
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
+                        Card(
+                          child: Padding(
+                            padding: const EdgeInsets.all(12),
+                            child: Column(
+                              children: [
+                                _ProfileAvatar(
+                                  profile: profile,
+                                  size: 88,
+                                  photoOverride: selectedPhoto,
+                                ),
+                                const SizedBox(height: 12),
+                                const Text(
+                                  'Foto de perfil',
+                                  style: TextStyle(fontWeight: FontWeight.w900),
+                                ),
+                                const SizedBox(height: 8),
+                                Wrap(
+                                  spacing: 8,
+                                  runSpacing: 8,
+                                  alignment: WrapAlignment.center,
+                                  children: [
+                                    FilledButton.tonalIcon(
+                                      onPressed: pickingPhoto
+                                          ? null
+                                          : () => pickPhoto(
+                                                ImageSource.gallery,
+                                                setDialogState,
+                                              ),
+                                      icon: const Icon(Icons.photo_library_outlined),
+                                      label: const Text('Galería'),
+                                    ),
+                                    FilledButton.tonalIcon(
+                                      onPressed: pickingPhoto
+                                          ? null
+                                          : () => pickPhoto(
+                                                ImageSource.camera,
+                                                setDialogState,
+                                              ),
+                                      icon: const Icon(Icons.photo_camera_outlined),
+                                      label: const Text('Cámara'),
+                                    ),
+                                  ],
+                                ),
+                                if (pickingPhoto) ...[
+                                  const SizedBox(height: 10),
+                                  const LinearProgressIndicator(),
+                                ],
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
                         TextFormField(
                           controller: firstName,
                           decoration: const InputDecoration(
@@ -234,16 +361,6 @@ Future<void> _showEditProfileDialog(
                             prefixIcon: Icon(Icons.map_outlined),
                           ),
                         ),
-                        const SizedBox(height: 10),
-                        TextFormField(
-                          controller: photo,
-                          keyboardType: TextInputType.url,
-                          decoration: const InputDecoration(
-                            labelText: 'URL de foto de perfil',
-                            prefixIcon: Icon(Icons.photo_outlined),
-                            helperText: 'La selección desde galería se añadirá después.',
-                          ),
-                        ),
                         if (message != null) ...[
                           const SizedBox(height: 12),
                           Text(
@@ -262,7 +379,7 @@ Future<void> _showEditProfileDialog(
                   child: const Text('Cancelar'),
                 ),
                 FilledButton.icon(
-                  onPressed: saving
+                  onPressed: saving || pickingPhoto
                       ? null
                       : () async {
                           if (!formKey.currentState!.validate()) return;
@@ -278,7 +395,7 @@ Future<void> _showEditProfileDialog(
                               state: state.text,
                               profession: profession.text,
                               phone: phone.text,
-                              profilePhoto: photo.text,
+                              profilePhoto: selectedPhoto,
                             );
                             OzirafSessionStore.profileNotifier.value = updated;
                             if (dialogContext.mounted) {
@@ -309,7 +426,6 @@ Future<void> _showEditProfileDialog(
     state.dispose();
     profession.dispose();
     phone.dispose();
-    photo.dispose();
   }
 }
 
@@ -349,7 +465,7 @@ class _ProfileApi {
           },
           body: jsonEncode(body),
         )
-        .timeout(const Duration(seconds: 10));
+        .timeout(const Duration(seconds: 15));
 
     Object? payload;
     try {
