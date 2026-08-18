@@ -1,5 +1,6 @@
 import {
   IsEmail,
+  IsIn,
   IsNotEmpty,
   IsOptional,
   IsString,
@@ -31,6 +32,10 @@ export class RegisterDto {
   @IsString()
   @MaxLength(80)
   lastName?: string;
+
+  @IsOptional()
+  @IsIn(['SOLICITANTE', 'ANUNCIANTE'])
+  accountType?: string;
 
   @IsOptional()
   @Trim()
