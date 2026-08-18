@@ -14,6 +14,7 @@ dependencies:
   flutter_secure_storage: ^9.2.4
   image_picker: ^1.2.3
   video_player: ^2.13.0
+  share_plus: ^11.1.0
   cupertino_icons: ^1.0.8
 
 dev_dependencies:
