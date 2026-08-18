@@ -15,6 +15,7 @@ export const publicUserSelect = {
   lastName: true,
   phone: true,
   role: true,
+  accountType: true,
   createdAt: true,
   updatedAt: true,
   emailVerified: true,
@@ -40,6 +41,7 @@ export class UsersService {
     password: string;
     firstName: string;
     lastName?: string;
+    accountType?: string;
     phone?: string;
     city?: string;
     state?: string;
@@ -221,6 +223,7 @@ export class UsersService {
   async updateProfile(
     id: string,
     data: {
+      accountType?: string;
       firstName?: string;
       lastName?: string;
       phone?: string;
@@ -230,6 +233,10 @@ export class UsersService {
       profession?: string;
       description?: string;
       profilePhoto?: string;
+      whatsapp?: string;
+      instagramUrl?: string;
+      facebookUrl?: string;
+      websiteUrl?: string;
     },
   ) {
     return this.prisma.user.update({
