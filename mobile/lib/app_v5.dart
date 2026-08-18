@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:image_picker/image_picker.dart';
 
 import 'app_v2.dart' as api;
 import 'app_v4.dart' as base;
@@ -56,11 +57,18 @@ class OzirafApp extends base.OzirafApp {
   }
 }
 
+class _PublishResult {
+  const _PublishResult({required this.title, this.warning});
+
+  final String title;
+  final String? warning;
+}
+
 Future<void> _openPublishSheet(
   BuildContext context,
   OzirafProfile profile,
 ) async {
-  final createdTitle = await showModalBottomSheet<String>(
+  final result = await showModalBottomSheet<_PublishResult>(
     context: context,
     isScrollControlled: true,
     useSafeArea: true,
@@ -68,15 +76,28 @@ Future<void> _openPublishSheet(
     builder: (sheetContext) => _PublishServiceSheet(profile: profile),
   );
 
-  if (!context.mounted || createdTitle == null || createdTitle.isEmpty) return;
+  if (!context.mounted || result == null || result.title.isEmpty) return;
 
   await showDialog<void>(
     context: context,
     builder: (dialogContext) => AlertDialog(
       icon: const Icon(Icons.check_circle_outline, size: 44),
       title: const Text('Servicio publicado'),
-      content: Text(
-        '“$createdTitle” ya está guardado en OZIRAF y aparecerá en tus anuncios.',
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '“${result.title}” ya está guardado en OZIRAF y aparecerá en tus anuncios.',
+          ),
+          if (result.warning != null) ...[
+            const SizedBox(height: 12),
+            Text(
+              result.warning!,
+              style: const TextStyle(fontWeight: FontWeight.w700),
+            ),
+          ],
+        ],
       ),
       actions: [
         FilledButton(
@@ -107,8 +128,12 @@ class _PublishServiceSheetState extends State<_PublishServiceSheet> {
   final state = TextEditingController();
   final neighborhood = TextEditingController();
   final price = TextEditingController();
+  final picker = ImagePicker();
 
+  List<XFile> photos = const [];
+  XFile? video;
   bool saving = false;
+  bool pickingMedia = false;
   String? message;
 
   @override
@@ -134,6 +159,67 @@ class _PublishServiceSheetState extends State<_PublishServiceSheet> {
     super.dispose();
   }
 
+  Future<void> pickPhotos() async {
+    if (pickingMedia || saving) return;
+    setState(() {
+      pickingMedia = true;
+      message = null;
+    });
+
+    try {
+      final selected = await picker.pickMultiImage(
+        maxWidth: 1280,
+        maxHeight: 1280,
+        imageQuality: 75,
+      );
+      if (!mounted) return;
+
+      final limited = selected.take(4).toList();
+      setState(() {
+        photos = limited;
+        if (selected.length > 4) {
+          message = 'Se usarán las primeras 4 fotos seleccionadas.';
+        }
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        message = e.toString().replaceFirst('Exception: ', '');
+      });
+    } finally {
+      if (mounted) setState(() => pickingMedia = false);
+    }
+  }
+
+  Future<void> pickVideo(ImageSource source) async {
+    if (pickingMedia || saving) return;
+    setState(() {
+      pickingMedia = true;
+      message = null;
+    });
+
+    try {
+      final selected = await picker.pickVideo(
+        source: source,
+        maxDuration: const Duration(seconds: 15),
+      );
+      if (!mounted) return;
+      if (selected != null) {
+        setState(() {
+          video = selected;
+          message = 'Video listo. Máximo 15 segundos y 12 MB.';
+        });
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        message = e.toString().replaceFirst('Exception: ', '');
+      });
+    } finally {
+      if (mounted) setState(() => pickingMedia = false);
+    }
+  }
+
   Future<void> publish() async {
     if (saving || !formKey.currentState!.validate()) return;
 
@@ -146,11 +232,13 @@ class _PublishServiceSheetState extends State<_PublishServiceSheet> {
 
     setState(() {
       saving = true;
-      message = null;
+      message = photos.isNotEmpty || video != null
+          ? 'Publicando anuncio y subiendo archivos...'
+          : null;
     });
 
     try {
-      await _PublishServiceApi.create(
+      final created = await _PublishServiceApi.create(
         title: title.text,
         description: description.text,
         category: category.text,
@@ -161,8 +249,38 @@ class _PublishServiceSheetState extends State<_PublishServiceSheet> {
         price: parsedPrice,
       );
 
+      final postId = api.text(created['id']);
+      if (postId.isEmpty) {
+        throw Exception('OZIRAF no devolvió el identificador del anuncio.');
+      }
+
+      final failedUploads = <String>[];
+      for (final photo in photos) {
+        try {
+          await _PublishServiceApi.uploadMedia(postId: postId, file: photo);
+        } catch (_) {
+          failedUploads.add('una foto');
+        }
+      }
+
+      if (video != null) {
+        try {
+          await _PublishServiceApi.uploadMedia(postId: postId, file: video!);
+        } catch (_) {
+          failedUploads.add('el video');
+        }
+      }
+
       if (!mounted) return;
-      Navigator.pop(context, title.text.trim());
+      Navigator.pop(
+        context,
+        _PublishResult(
+          title: title.text.trim(),
+          warning: failedUploads.isEmpty
+              ? null
+              : 'El anuncio sí quedó publicado, pero no se pudo subir ${failedUploads.join(' y ')}. Puedes volver a intentarlo más adelante.',
+        ),
+      );
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -197,9 +315,115 @@ class _PublishServiceSheetState extends State<_PublishServiceSheet> {
               ),
               const SizedBox(height: 6),
               const Text(
-                'Describe claramente lo que ofreces. Después podrás administrarlo desde Mis anuncios.',
+                'Describe claramente lo que ofreces. Puedes agregar hasta 4 fotos y 1 video corto.',
               ),
               const SizedBox(height: 18),
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Fotos y video del trabajo',
+                        style: TextStyle(fontWeight: FontWeight.w900),
+                      ),
+                      const SizedBox(height: 4),
+                      const Text(
+                        'Hasta 4 fotos y 1 video de máximo 15 segundos.',
+                      ),
+                      const SizedBox(height: 10),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          FilledButton.tonalIcon(
+                            onPressed: pickingMedia || saving ? null : pickPhotos,
+                            icon: const Icon(Icons.photo_library_outlined),
+                            label: Text(
+                              photos.isEmpty
+                                  ? 'Agregar fotos'
+                                  : '${photos.length} foto${photos.length == 1 ? '' : 's'}',
+                            ),
+                          ),
+                          FilledButton.tonalIcon(
+                            onPressed: pickingMedia || saving
+                                ? null
+                                : () => pickVideo(ImageSource.gallery),
+                            icon: const Icon(Icons.video_library_outlined),
+                            label: Text(video == null ? 'Elegir video' : 'Cambiar video'),
+                          ),
+                          FilledButton.tonalIcon(
+                            onPressed: pickingMedia || saving
+                                ? null
+                                : () => pickVideo(ImageSource.camera),
+                            icon: const Icon(Icons.videocam_outlined),
+                            label: const Text('Grabar video'),
+                          ),
+                        ],
+                      ),
+                      if (photos.isNotEmpty) ...[
+                        const SizedBox(height: 10),
+                        ...photos.asMap().entries.map(
+                              (entry) => ListTile(
+                                dense: true,
+                                contentPadding: EdgeInsets.zero,
+                                leading: const Icon(Icons.image_outlined),
+                                title: Text(
+                                  'Foto ${entry.key + 1}',
+                                  style: const TextStyle(fontWeight: FontWeight.w700),
+                                ),
+                                subtitle: Text(
+                                  entry.value.name,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                trailing: IconButton(
+                                  tooltip: 'Quitar foto',
+                                  onPressed: saving
+                                      ? null
+                                      : () => setState(() {
+                                            photos = [
+                                              for (var i = 0; i < photos.length; i++)
+                                                if (i != entry.key) photos[i],
+                                            ];
+                                          }),
+                                  icon: const Icon(Icons.close),
+                                ),
+                              ),
+                            ),
+                      ],
+                      if (video != null)
+                        ListTile(
+                          dense: true,
+                          contentPadding: EdgeInsets.zero,
+                          leading: const Icon(Icons.movie_outlined),
+                          title: const Text(
+                            'Video seleccionado',
+                            style: TextStyle(fontWeight: FontWeight.w700),
+                          ),
+                          subtitle: Text(
+                            video!.name,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          trailing: IconButton(
+                            tooltip: 'Quitar video',
+                            onPressed: saving
+                                ? null
+                                : () => setState(() => video = null),
+                            icon: const Icon(Icons.close),
+                          ),
+                        ),
+                      if (pickingMedia) ...[
+                        const SizedBox(height: 8),
+                        const LinearProgressIndicator(),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
               TextFormField(
                 controller: title,
                 maxLength: 120,
@@ -332,7 +556,7 @@ class _PublishServiceSheetState extends State<_PublishServiceSheet> {
               SizedBox(
                 width: double.infinity,
                 child: FilledButton.icon(
-                  onPressed: saving ? null : publish,
+                  onPressed: saving || pickingMedia ? null : publish,
                   icon: saving
                       ? const SizedBox(
                           width: 18,
@@ -401,30 +625,65 @@ class _PublishServiceApi {
         )
         .timeout(const Duration(seconds: 15));
 
-    Object? payload;
-    try {
-      payload = response.body.trim().isEmpty ? null : jsonDecode(response.body);
-    } catch (_) {
-      payload = response.body;
-    }
-
-    if (response.statusCode < 200 || response.statusCode >= 300) {
-      if (payload is Map<String, dynamic>) {
-        final value = payload['message'];
-        if (value is String && value.trim().isNotEmpty) {
-          throw Exception(value);
-        }
-        if (value is List && value.isNotEmpty) {
-          throw Exception(value.join(', '));
-        }
-      }
-      throw Exception('OZIRAF API ${response.statusCode}');
-    }
+    final payload = _decode(response.body);
+    _ensureSuccess(response.statusCode, payload);
 
     if (payload is! Map<String, dynamic>) {
       throw Exception('OZIRAF no devolvió el anuncio creado.');
     }
 
     return payload;
+  }
+
+  static Future<void> uploadMedia({
+    required String postId,
+    required XFile file,
+  }) async {
+    final token = OzirafSessionStore.tokenNotifier.value;
+    if (token == null || token.trim().isEmpty) {
+      throw Exception('Tu sesión no está disponible. Vuelve a iniciar sesión.');
+    }
+
+    final bytes = await file.readAsBytes();
+    final request = http.MultipartRequest(
+      'POST',
+      Uri.parse('${api.OzirafApiClient.baseUrl}/posts/$postId/media'),
+    );
+    request.headers['Authorization'] = 'Bearer $token';
+    request.files.add(
+      http.MultipartFile.fromBytes(
+        'file',
+        bytes,
+        filename: file.name,
+      ),
+    );
+
+    final streamed = await request.send().timeout(const Duration(seconds: 30));
+    final response = await http.Response.fromStream(streamed);
+    final payload = _decode(response.body);
+    _ensureSuccess(response.statusCode, payload);
+  }
+
+  static Object? _decode(String body) {
+    if (body.trim().isEmpty) return null;
+    try {
+      return jsonDecode(body);
+    } catch (_) {
+      return body;
+    }
+  }
+
+  static void _ensureSuccess(int status, Object? payload) {
+    if (status >= 200 && status < 300) return;
+    if (payload is Map<String, dynamic>) {
+      final value = payload['message'];
+      if (value is String && value.trim().isNotEmpty) {
+        throw Exception(value);
+      }
+      if (value is List && value.isNotEmpty) {
+        throw Exception(value.join(', '));
+      }
+    }
+    throw Exception('OZIRAF API $status');
   }
 }
