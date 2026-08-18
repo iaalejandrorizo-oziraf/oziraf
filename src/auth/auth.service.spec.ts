@@ -145,7 +145,7 @@ describe('AuthService', () => {
     ).rejects.toThrow('La cuenta no está activa');
   });
 
-  it('creates password reset tokens for active users', async () => {
+  it('creates password reset tokens without exposing them', async () => {
     usersService.findByEmail.mockResolvedValue({
       id: 'user-1',
       email: 'user@example.com',
@@ -164,7 +164,10 @@ describe('AuthService', () => {
       expect.any(String),
       expect.any(Date),
     );
-    expect(result).toHaveProperty('resetToken');
+    expect(result).toEqual({
+      message: 'Si el correo existe, recibirás instrucciones para recuperar tu contraseña',
+    });
+    expect(result).not.toHaveProperty('resetToken');
   });
 
   it('confirms valid password reset tokens', async () => {
