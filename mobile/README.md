@@ -57,3 +57,5 @@ Release APKs are split by Android ABI to reduce download size. The ARM64 build i
 ## Automatic deployment
 
 Pushes to `main` that change files under `mobile/` automatically run on the `oziraf-pc` self-hosted runner. The workflow analyzes the Flutter app, builds Android and web, publishes the APKs to the local downloads folder, refreshes the local web build, and uploads the APKs as GitHub Actions artifacts.
+
+The split-APK workflow was restored and retriggered after fixing the GitHub Actions configuration.
