@@ -18,6 +18,11 @@ analyzer:
     - windows/**
     - macos/**
     - linux/**
+  errors:
+    # share_plus still supports Share.share in the version used by OZIRAF,
+    # but marks it deprecated in favor of SharePlus.instance.share.
+    # Keep builds green while the social-video rollout is validated.
+    deprecated_member_use: ignore
 
 linter:
   # The lint rules applied to this project can be customized in the
