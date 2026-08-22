@@ -43,6 +43,7 @@ jobs:
       TEMP: D:\OZIRAF\tools\tmp
       TMP: D:\OZIRAF\tools\tmp
       OZIRAF_REMOTE_API_URL: http://100.112.136.50:3001
+      OZIRAF_WEB_LOCAL_API_URL: http://127.0.0.1:3001
       OZIRAF_WEB_PUBLISH_PATH: D:\OZIRAF\mobile\build\web
       OZIRAF_DEBUG_APK_PUBLISH_PATH: D:\OZIRAF\mobile\build\web\downloads\oziraf-debug.apk
       OZIRAF_ARM64_APK_PUBLISH_PATH: D:\OZIRAF\mobile\build\web\downloads\oziraf-release-arm64.apk
@@ -114,7 +115,7 @@ jobs:
         working-directory: mobile
         run: |
           flutter build web --debug `
-            "--dart-define=OZIRAF_API_URL=$env:OZIRAF_REMOTE_API_URL"
+            "--dart-define=OZIRAF_API_URL=$env:OZIRAF_WEB_LOCAL_API_URL"
 
       - name: Publish web to OZIRAF local server
         if: env.TASK == 'mobile-build-web' || env.TASK == 'mobile-auto-deploy'
