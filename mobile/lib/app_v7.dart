@@ -3,6 +3,7 @@ import 'dart:ui' show PointerDeviceKind;
 import 'package:flutter/material.dart';
 
 import 'app_v6.dart' as base;
+import 'shorts_feed.dart';
 import 'social_feed.dart';
 
 class OzirafApp extends base.OzirafApp {
@@ -51,7 +52,9 @@ ThemeData _socialTheme(ThemeData? inherited) {
       }),
       iconTheme: WidgetStateProperty.resolveWith((states) {
         final selected = states.contains(WidgetState.selected);
-        return IconThemeData(color: selected ? const Color(0xFF654CFF) : const Color(0xFF555B69));
+        return IconThemeData(
+          color: selected ? const Color(0xFF654CFF) : const Color(0xFF555B69),
+        );
       }),
     ),
   );
@@ -75,7 +78,7 @@ class _SocialShellState extends State<_SocialShell> {
 
     if (desktop) {
       return Scaffold(
-        backgroundColor: const Color(0xFFF7F8FC),
+        backgroundColor: index == 1 ? Colors.black : const Color(0xFFF7F8FC),
         body: Row(
           children: [
             _DesktopNav(
@@ -90,7 +93,7 @@ class _SocialShellState extends State<_SocialShell> {
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F8FC),
+      backgroundColor: index == 1 ? Colors.black : const Color(0xFFF7F8FC),
       appBar: index == 0
           ? AppBar(
               backgroundColor: Colors.white,
@@ -99,14 +102,23 @@ class _SocialShellState extends State<_SocialShell> {
               titleSpacing: 16,
               title: const _BrandHeader(),
               actions: [
-                IconButton(onPressed: () {}, icon: const Icon(Icons.search_rounded)),
+                IconButton(
+                  onPressed: () {},
+                  icon: const Icon(Icons.search_rounded),
+                ),
                 Stack(
                   children: [
-                    IconButton(onPressed: () {}, icon: const Icon(Icons.notifications_none_rounded)),
+                    IconButton(
+                      onPressed: () {},
+                      icon: const Icon(Icons.notifications_none_rounded),
+                    ),
                     const Positioned(
                       right: 11,
                       top: 11,
-                      child: CircleAvatar(radius: 4, backgroundColor: Color(0xFFEA4335)),
+                      child: CircleAvatar(
+                        radius: 4,
+                        backgroundColor: Color(0xFFEA4335),
+                      ),
                     ),
                   ],
                 ),
@@ -119,11 +131,31 @@ class _SocialShellState extends State<_SocialShell> {
         selectedIndex: index,
         onDestinationSelected: (value) => setState(() => index = value),
         destinations: const [
-          NavigationDestination(icon: Icon(Icons.home_outlined), selectedIcon: Icon(Icons.home_rounded), label: 'Inicio'),
-          NavigationDestination(icon: Icon(Icons.explore_outlined), selectedIcon: Icon(Icons.explore), label: 'Explorar'),
-          NavigationDestination(icon: Icon(Icons.add_circle_outline), selectedIcon: Icon(Icons.add_circle), label: 'Publicar'),
-          NavigationDestination(icon: Icon(Icons.chat_bubble_outline), selectedIcon: Icon(Icons.chat_bubble), label: 'Mensajes'),
-          NavigationDestination(icon: Icon(Icons.person_outline), selectedIcon: Icon(Icons.person), label: 'Cuenta'),
+          NavigationDestination(
+            icon: Icon(Icons.home_outlined),
+            selectedIcon: Icon(Icons.home_rounded),
+            label: 'Inicio',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.play_circle_outline),
+            selectedIcon: Icon(Icons.play_circle_fill),
+            label: 'Shorts',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.add_circle_outline),
+            selectedIcon: Icon(Icons.add_circle),
+            label: 'Publicar',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.chat_bubble_outline),
+            selectedIcon: Icon(Icons.chat_bubble),
+            label: 'Mensajes',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.person_outline),
+            selectedIcon: Icon(Icons.person),
+            label: 'Cuenta',
+          ),
         ],
       ),
     );
@@ -131,6 +163,7 @@ class _SocialShellState extends State<_SocialShell> {
 
   Widget _body() {
     if (index == 0) return const SocialFeedScreen();
+    if (index == 1) return const ShortsFeedScreen();
 
     return Column(
       children: [
@@ -141,7 +174,11 @@ class _SocialShellState extends State<_SocialShell> {
           child: Text(
             _sectionMessage(index),
             textAlign: TextAlign.center,
-            style: const TextStyle(color: Color(0xFF513BD4), fontWeight: FontWeight.w700, fontSize: 12),
+            style: const TextStyle(
+              color: Color(0xFF513BD4),
+              fontWeight: FontWeight.w700,
+              fontSize: 12,
+            ),
           ),
         ),
         Expanded(child: widget.legacyHome),
@@ -150,7 +187,6 @@ class _SocialShellState extends State<_SocialShell> {
   }
 
   String _sectionMessage(int value) => switch (value) {
-        1 => 'Explorar: esta sección conservará sus funciones mientras recibe el nuevo diseño.',
         2 => 'Publicar: conservamos el formulario y carga de fotos/video que ya funcionan.',
         3 => 'Mensajes: esta sección será el siguiente bloque del rediseño social.',
         4 => 'Cuenta: tu sesión, perfil y datos permanecen intactos.',
@@ -170,20 +206,30 @@ class _BrandHeader extends StatelessWidget {
           width: 39,
           height: 39,
           decoration: BoxDecoration(
-            gradient: const LinearGradient(colors: [Color(0xFF7C4DFF), Color(0xFF45B8FF)]),
+            gradient: const LinearGradient(
+              colors: [Color(0xFF7C4DFF), Color(0xFF45B8FF)],
+            ),
             borderRadius: BorderRadius.circular(12),
           ),
           alignment: Alignment.center,
           child: Container(
             width: 14,
             height: 14,
-            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(4)),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(4),
+            ),
           ),
         ),
         const SizedBox(width: 10),
         const Text(
           'OZIRAF',
-          style: TextStyle(fontSize: 23, fontWeight: FontWeight.w900, letterSpacing: -.5, color: Color(0xFF1D2130)),
+          style: TextStyle(
+            fontSize: 23,
+            fontWeight: FontWeight.w900,
+            letterSpacing: -.5,
+            color: Color(0xFF1D2130),
+          ),
         ),
       ],
     );
@@ -200,7 +246,7 @@ class _DesktopNav extends StatelessWidget {
   Widget build(BuildContext context) {
     const items = [
       (Icons.home_outlined, 'Inicio'),
-      (Icons.explore_outlined, 'Explorar'),
+      (Icons.play_circle_outline, 'Shorts'),
       (Icons.add_circle_outline, 'Publicar'),
       (Icons.chat_bubble_outline, 'Mensajes'),
       (Icons.bookmark_border, 'Guardados'),
@@ -214,7 +260,10 @@ class _DesktopNav extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Padding(padding: EdgeInsets.symmetric(horizontal: 8), child: _BrandHeader()),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 8),
+            child: _BrandHeader(),
+          ),
           const SizedBox(height: 30),
           ...List.generate(items.length, (itemIndex) {
             final shellIndex = itemIndex <= 3 ? itemIndex : itemIndex == 5 ? 4 : 1;
@@ -225,13 +274,22 @@ class _DesktopNav extends StatelessWidget {
                 dense: true,
                 selected: active,
                 selectedTileColor: const Color(0xFFF0EDFF),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                leading: Icon(items[itemIndex].$1, color: active ? const Color(0xFF654CFF) : const Color(0xFF555B69)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                leading: Icon(
+                  items[itemIndex].$1,
+                  color: active
+                      ? const Color(0xFF654CFF)
+                      : const Color(0xFF555B69),
+                ),
                 title: Text(
                   items[itemIndex].$2,
                   style: TextStyle(
                     fontWeight: active ? FontWeight.w800 : FontWeight.w600,
-                    color: active ? const Color(0xFF654CFF) : const Color(0xFF343846),
+                    color: active
+                        ? const Color(0xFF654CFF)
+                        : const Color(0xFF343846),
                   ),
                 ),
                 onTap: () => onSelected(shellIndex),
@@ -242,15 +300,26 @@ class _DesktopNav extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              gradient: const LinearGradient(colors: [Color(0xFFF4F1FF), Color(0xFFEEF8FF)]),
+              gradient: const LinearGradient(
+                colors: [Color(0xFFF4F1FF), Color(0xFFEEF8FF)],
+              ),
               borderRadius: BorderRadius.circular(18),
             ),
             child: const Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('¿Eres profesional?', style: TextStyle(fontWeight: FontWeight.w900)),
+                Text(
+                  '¿Eres profesional?',
+                  style: TextStyle(fontWeight: FontWeight.w900),
+                ),
                 SizedBox(height: 5),
-                Text('Publica tus servicios y conecta con nuevos clientes.', style: TextStyle(fontSize: 12, color: Color(0xFF6D7280))),
+                Text(
+                  'Publica tus servicios y conecta con nuevos clientes.',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Color(0xFF6D7280),
+                  ),
+                ),
               ],
             ),
           ),
