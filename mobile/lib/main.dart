@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'app_v6.dart';
+import 'app_v7.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
