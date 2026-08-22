@@ -165,41 +165,21 @@ jobs:
 
       - name: Publish latest public test release
         if: env.TASK == 'mobile-build-apk' || env.TASK == 'mobile-auto-deploy'
-        env:
-          GH_TOKEN: ${{ github.token }}
-        working-directory: mobile
-        run: |
-          $tag = $env:OZIRAF_TEST_RELEASE_TAG
-          $repo = '${{ github.repository }}'
-          $sha = '${{ github.sha }}'
-          $runNumber = '${{ github.run_number }}'
-
-          gh release view $tag --repo $repo *> $null
-          if ($LASTEXITCODE -eq 0) {
-            Write-Host "Removing previous rolling test release $tag"
-            gh release delete $tag --repo $repo --yes --cleanup-tag
-            if ($LASTEXITCODE -ne 0) {
-              throw "Could not remove previous public test release"
-            }
-          } else {
-            Write-Host "No previous rolling test release found"
-          }
-
-          gh release create $tag `
-            'dist\oziraf-test-arm64.apk' `
-            'dist\oziraf-test-armv7.apk' `
-            --repo $repo `
-            --target $sha `
-            --title "OZIRAF Mobile Test - Latest" `
-            --notes "APK pública de prueba generada automáticamente por OZIRAF PC Runner #$runNumber. Commit: $sha" `
-            --prerelease
-
-          if ($LASTEXITCODE -ne 0) {
-            throw "Could not publish public test release"
-          }
-
-          Write-Host "Public ARM64 APK: https://github.com/$repo/releases/download/$tag/oziraf-test-arm64.apk"
-          Write-Host "Public ARMv7 APK: https://github.com/$repo/releases/download/$tag/oziraf-test-armv7.apk"
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: mobile-test-latest
+          name: OZIRAF Mobile Test - Latest
+          prerelease: true
+          make_latest: false
+          target_commitish: ${{ github.sha }}
+          body: |
+            APK pública de prueba generada automáticamente por OZIRAF PC Runner #${{ github.run_number }}.
+            Commit: ${{ github.sha }}
+          files: |
+            mobile/dist/oziraf-test-arm64.apk
+            mobile/dist/oziraf-test-armv7.apk
+          fail_on_unmatched_files: true
+          overwrite_files: true
 
       - name: Publish debug APK
         if: env.TASK == 'mobile-build-apk'
