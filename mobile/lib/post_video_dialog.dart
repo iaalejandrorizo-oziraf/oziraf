@@ -6,6 +6,7 @@ import 'package:share_plus/share_plus.dart';
 import 'package:video_player/video_player.dart';
 
 import 'auth_session.dart';
+import 'video_source.dart';
 
 Future<void> showPostVideoDialog(
   BuildContext context, {
@@ -50,8 +51,9 @@ class _PostVideoPlayer extends StatefulWidget {
 }
 
 class _PostVideoPlayerState extends State<_PostVideoPlayer> {
-  late final VideoPlayerController controller;
+  late VideoPlayerController controller;
   late final Future<void> initializeFuture;
+  bool controllerReady = false;
   bool favorite = false;
   bool favoriteLoading = false;
   String resolvedPostId = '';
@@ -77,18 +79,24 @@ class _PostVideoPlayerState extends State<_PostVideoPlayer> {
   void initState() {
     super.initState();
     resolvedPostId = widget.postId;
-    controller = VideoPlayerController.networkUrl(Uri.parse(widget.url));
-    initializeFuture = controller.initialize().then((_) async {
-      await controller.setLooping(true);
-      await controller.play();
-      if (mounted) setState(() {});
-    });
+    initializeFuture = _initializeVideo();
     _resolvePostContext();
+  }
+
+  Future<void> _initializeVideo() async {
+    controller = await prepareVideoController(widget.url);
+    controllerReady = true;
+    await controller.initialize();
+    await controller.setLooping(true);
+    await controller.play();
+    if (mounted) setState(() {});
   }
 
   @override
   void dispose() {
-    controller.dispose();
+    if (controllerReady) {
+      controller.dispose();
+    }
     super.dispose();
   }
 
@@ -201,12 +209,40 @@ class _PostVideoPlayerState extends State<_PostVideoPlayer> {
           future: initializeFuture,
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(
-                child: CircularProgressIndicator(color: Colors.white),
+              return Stack(
+                fit: StackFit.expand,
+                children: [
+                  const Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        CircularProgressIndicator(color: Colors.white),
+                        SizedBox(height: 14),
+                        Text(
+                          'Cargando video...',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Positioned(
+                    left: 8,
+                    top: 8,
+                    child: IconButton.filledTonal(
+                      onPressed: () => Navigator.pop(context),
+                      icon: const Icon(Icons.close),
+                    ),
+                  ),
+                ],
               );
             }
 
-            if (snapshot.hasError || !controller.value.isInitialized) {
+            if (snapshot.hasError ||
+                !controllerReady ||
+                !controller.value.isInitialized) {
               return const Center(
                 child: Padding(
                   padding: EdgeInsets.all(24),
