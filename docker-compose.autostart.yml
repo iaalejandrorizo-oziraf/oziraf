@@ -1,0 +1,15 @@
+services:
+  postgres:
+    restart: unless-stopped
+
+  backend:
+    restart: unless-stopped
+
+  web:
+    image: nginx:alpine
+    container_name: oziraf-web-local
+    restart: unless-stopped
+    ports:
+      - "8092:80"
+    volumes:
+      - ./mobile/build/web:/usr/share/nginx/html:ro
