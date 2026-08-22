@@ -20,9 +20,15 @@ describe('setupApp', () => {
     expect(app.enableShutdownHooks).toHaveBeenCalled();
     expect(app.use).toHaveBeenCalled();
     expect(app.enableCors).toHaveBeenCalledWith({
-      origin: ['http://localhost:5173', 'http://localhost:3001'],
-      credentials: true,
-    });
+  origin: [
+    'http://localhost:5173',
+    'http://localhost:3001',
+    'http://127.0.0.1:8092',
+    'http://localhost:8092',
+    'http://100.112.136.50:8092',
+  ],
+  credentials: true,
+});
     expect(app.useGlobalPipes).toHaveBeenCalled();
   });
 });
