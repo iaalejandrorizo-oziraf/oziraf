@@ -47,26 +47,30 @@ type CachedMedia = {
 };
 
 function inferMediaMimeType(file?: UploadedMediaFile) {
-  if (!file || (file.mimetype && file.mimetype !== 'application/octet-stream')) {
+  if (
+    !file ||
+    (file.mimetype && file.mimetype !== 'application/octet-stream')
+  ) {
     return file;
   }
 
   const name = file.originalname.toLowerCase();
-  const inferred = name.endsWith('.jpg') || name.endsWith('.jpeg')
-    ? 'image/jpeg'
-    : name.endsWith('.png')
-      ? 'image/png'
-      : name.endsWith('.webp')
-        ? 'image/webp'
-        : name.endsWith('.mp4')
-          ? 'video/mp4'
-          : name.endsWith('.mov')
-            ? 'video/quicktime'
-            : name.endsWith('.webm')
-              ? 'video/webm'
-              : name.endsWith('.3gp')
-                ? 'video/3gpp'
-                : file.mimetype;
+  const inferred =
+    name.endsWith('.jpg') || name.endsWith('.jpeg')
+      ? 'image/jpeg'
+      : name.endsWith('.png')
+        ? 'image/png'
+        : name.endsWith('.webp')
+          ? 'image/webp'
+          : name.endsWith('.mp4')
+            ? 'video/mp4'
+            : name.endsWith('.mov')
+              ? 'video/quicktime'
+              : name.endsWith('.webm')
+                ? 'video/webm'
+                : name.endsWith('.3gp')
+                  ? 'video/3gpp'
+                  : file.mimetype;
 
   return {
     ...file,
@@ -139,7 +143,8 @@ export class PostsController {
       this.mediaCache.size > 0 &&
       this.mediaCacheBytes + requiredBytes > this.mediaCacheLimitBytes
     ) {
-      const oldestId = this.mediaCache.keys().next().value as string | undefined;
+      const oldestId = this.mediaCache.keys().next().value as
+        string | undefined;
       if (!oldestId) break;
       this.removeCachedMedia(oldestId);
     }
@@ -218,10 +223,7 @@ export class PostsController {
     @Param('id') id: string,
     @Body() adminUpdatePostStatusDto: AdminUpdatePostStatusDto,
   ) {
-    return this.postsService.updateStatusForAdmin(
-      id,
-      adminUpdatePostStatusDto,
-    );
+    return this.postsService.updateStatusForAdmin(id, adminUpdatePostStatusDto);
   }
 
   @UseGuards(JwtAuthGuard)
@@ -243,6 +245,22 @@ export class PostsController {
       req.user.userId,
       inferMediaMimeType(file),
     );
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Delete(':id/media/:mediaId')
+  async removeMedia(
+    @Param('id') id: string,
+    @Param('mediaId') mediaId: string,
+    @Request() req,
+  ) {
+    const result = await this.postsService.removeMedia(
+      id,
+      mediaId,
+      req.user.userId,
+    );
+    this.removeCachedMedia(mediaId);
+    return result;
   }
 
   @Get('media/:mediaId/context')
@@ -283,6 +301,11 @@ export class PostsController {
     res.setHeader('Content-Type', media.mimeType);
     res.setHeader('Accept-Ranges', 'bytes');
     res.setHeader('Content-Disposition', 'inline');
+    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+    res.setHeader(
+      'Access-Control-Expose-Headers',
+      'Accept-Ranges, Content-Length, Content-Range',
+    );
     res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
 
     if (range) {

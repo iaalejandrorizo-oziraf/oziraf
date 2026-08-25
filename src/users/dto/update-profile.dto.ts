@@ -5,6 +5,7 @@ import {
   IsUrl,
   Matches,
   MaxLength,
+  ValidateIf,
 } from 'class-validator';
 import { Trim } from '../../common/decorators/trim.decorator';
 
@@ -65,13 +66,10 @@ export class UpdateProfileDto {
   @Trim()
   @IsString()
   @MaxLength(90_000)
-  @Matches(
-    /^(https?:\/\/|data:image\/(?:jpeg|png|webp);base64,)/i,
-    {
-      message:
-        'profilePhoto debe ser una URL http(s) o una imagen JPEG/PNG/WebP válida',
-    },
-  )
+  @Matches(/^(https?:\/\/|data:image\/(?:jpeg|png|webp);base64,)/i, {
+    message:
+      'profilePhoto debe ser una URL http(s) o una imagen JPEG/PNG/WebP válida',
+  })
   profilePhoto?: string;
 
   @IsOptional()
@@ -82,6 +80,7 @@ export class UpdateProfileDto {
 
   @IsOptional()
   @Trim()
+  @ValidateIf((_, value) => value !== '')
   @IsString()
   @IsUrl({ require_protocol: true })
   @MaxLength(500)
@@ -89,6 +88,7 @@ export class UpdateProfileDto {
 
   @IsOptional()
   @Trim()
+  @ValidateIf((_, value) => value !== '')
   @IsString()
   @IsUrl({ require_protocol: true })
   @MaxLength(500)
@@ -96,6 +96,23 @@ export class UpdateProfileDto {
 
   @IsOptional()
   @Trim()
+  @ValidateIf((_, value) => value !== '')
+  @IsString()
+  @IsUrl({ require_protocol: true })
+  @MaxLength(500)
+  tiktokUrl?: string;
+
+  @IsOptional()
+  @Trim()
+  @ValidateIf((_, value) => value !== '')
+  @IsString()
+  @IsUrl({ require_protocol: true })
+  @MaxLength(500)
+  xUrl?: string;
+
+  @IsOptional()
+  @Trim()
+  @ValidateIf((_, value) => value !== '')
   @IsString()
   @IsUrl({ require_protocol: true })
   @MaxLength(500)

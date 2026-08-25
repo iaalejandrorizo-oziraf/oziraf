@@ -69,7 +69,8 @@ class _OzirafAppState extends State<OzirafApp> {
     var loadedProfile = await OzirafApiClient.fetchProfile(accessToken);
     final mine = await OzirafApiClient.fetchMyPosts(accessToken);
     final storedType = await sessionStore.readAccountType();
-    final type = storedType ??
+    final type =
+        storedType ??
         (mine.isNotEmpty
             ? OzirafAccountType.anunciante
             : loadedProfile.accountType);
@@ -279,7 +280,9 @@ class _OzirafHomeState extends State<OzirafHome> {
               )
             : PlaceholderPanel(
                 icon: Icons.chat_bubble_outline,
-                title: isAdvertiser ? 'Solicitudes recibidas' : 'Mis solicitudes',
+                title: isAdvertiser
+                    ? 'Solicitudes recibidas'
+                    : 'Mis solicitudes',
                 message: isAdvertiser
                     ? 'Aquí aparecerán los contactos de personas interesadas en tus anuncios.'
                     : 'Aquí podrás dar seguimiento a tus solicitudes enviadas.',
@@ -309,28 +312,28 @@ class _OzirafHomeState extends State<OzirafHome> {
 
 extension OzirafTabMeta on OzirafTab {
   IconData get icon => switch (this) {
-        OzirafTab.buscar => Icons.search_outlined,
-        OzirafTab.actividad => Icons.dashboard_outlined,
-        OzirafTab.solicitudes => Icons.chat_bubble_outline,
-        OzirafTab.publicar => Icons.add_circle_outline,
-        OzirafTab.cuenta => Icons.person_outline,
-      };
+    OzirafTab.buscar => Icons.search_outlined,
+    OzirafTab.actividad => Icons.dashboard_outlined,
+    OzirafTab.solicitudes => Icons.chat_bubble_outline,
+    OzirafTab.publicar => Icons.add_circle_outline,
+    OzirafTab.cuenta => Icons.person_outline,
+  };
 
   IconData get selectedIcon => switch (this) {
-        OzirafTab.buscar => Icons.search,
-        OzirafTab.actividad => Icons.dashboard,
-        OzirafTab.solicitudes => Icons.chat_bubble,
-        OzirafTab.publicar => Icons.add_circle,
-        OzirafTab.cuenta => Icons.person,
-      };
+    OzirafTab.buscar => Icons.search,
+    OzirafTab.actividad => Icons.dashboard,
+    OzirafTab.solicitudes => Icons.chat_bubble,
+    OzirafTab.publicar => Icons.add_circle,
+    OzirafTab.cuenta => Icons.person,
+  };
 
   String label(bool advertiser) => switch (this) {
-        OzirafTab.buscar => 'Buscar',
-        OzirafTab.actividad => advertiser ? 'Mis anuncios' : 'Favoritos',
-        OzirafTab.solicitudes => 'Solicitudes',
-        OzirafTab.publicar => 'Publicar',
-        OzirafTab.cuenta => 'Cuenta',
-      };
+    OzirafTab.buscar => 'Buscar',
+    OzirafTab.actividad => advertiser ? 'Mis anuncios' : 'Favoritos',
+    OzirafTab.solicitudes => 'Solicitudes',
+    OzirafTab.publicar => 'Publicar',
+    OzirafTab.cuenta => 'Cuenta',
+  };
 }
 
 class SearchScreen extends StatefulWidget {
@@ -386,7 +389,8 @@ class _SearchScreenState extends State<SearchScreen> {
     final q = searchController.text.trim().toLowerCase();
     final city = cityController.text.trim().toLowerCase();
     return posts.where((post) {
-      final value = '${post.title} ${post.description} ${post.category}'.toLowerCase();
+      final value = '${post.title} ${post.description} ${post.category}'
+          .toLowerCase();
       return (q.isEmpty || value.contains(q)) &&
           (city.isEmpty || post.city.toLowerCase().contains(city));
     }).toList();
@@ -401,9 +405,8 @@ class _SearchScreenState extends State<SearchScreen> {
         children: [
           Text(
             'Encuentra lo que necesitas cerca de ti',
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.w900,
-                ),
+            style: Theme.of(context).textTheme.headlineSmall
+                ?.copyWith(fontWeight: FontWeight.w900),
           ),
           const SizedBox(height: 14),
           TextField(
@@ -496,9 +499,8 @@ class _MyPostsScreenState extends State<MyPostsScreen> {
         children: [
           Text(
             'Mis publicaciones',
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.w900,
-                ),
+            style: Theme.of(context).textTheme.headlineSmall
+                ?.copyWith(fontWeight: FontWeight.w900),
           ),
           const SizedBox(height: 6),
           const Text(
@@ -541,7 +543,8 @@ class PostMediaItem {
   bool get isImage => kind.toUpperCase() == 'IMAGE';
   bool get isVideo => kind.toUpperCase() == 'VIDEO';
 
-  String get url => '${OzirafApiClient.baseUrl}/posts/media/$id';
+  String get url =>
+      '${OzirafApiClient.baseUrl}/posts/media/$id${isVideo ? '?v=2' : ''}';
 
   factory PostMediaItem.fromJson(Map<String, dynamic> json) {
     return PostMediaItem(
@@ -623,7 +626,10 @@ class ServiceCard extends StatelessWidget {
                         errorBuilder: (_, _, _) => Container(
                           color: OzirafColors.surfaceSoft,
                           alignment: Alignment.center,
-                          child: const Icon(Icons.broken_image_outlined, size: 42),
+                          child: const Icon(
+                            Icons.broken_image_outlined,
+                            size: 42,
+                          ),
                         ),
                       );
                     },
@@ -649,6 +655,9 @@ class ServiceCard extends StatelessWidget {
                   context,
                   url: videos.first.url,
                   title: post.title,
+                  postId: post.id,
+                  providerName: post.providerName,
+                  description: post.description,
                 ),
                 icon: const Icon(Icons.play_circle_outline),
                 label: const Text('Ver video del trabajo'),
@@ -878,9 +887,8 @@ class _AccountScreenState extends State<AccountScreen> {
         children: [
           Text(
             'Mi cuenta',
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.w900,
-                ),
+            style: Theme.of(context).textTheme.headlineSmall
+                ?.copyWith(fontWeight: FontWeight.w900),
           ),
           const SizedBox(height: 14),
           Card(
@@ -916,9 +924,8 @@ class _AccountScreenState extends State<AccountScreen> {
           const SizedBox(height: 14),
           Text(
             'Usar OZIRAF como',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w900,
-                ),
+            style: Theme.of(context).textTheme.titleMedium
+                ?.copyWith(fontWeight: FontWeight.w900),
           ),
           const SizedBox(height: 8),
           SegmentedButton<OzirafAccountType>(
@@ -960,15 +967,12 @@ class _AccountScreenState extends State<AccountScreen> {
       children: [
         Text(
           registerMode ? 'Crear cuenta' : 'Iniciar sesión',
-          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.w900,
-              ),
+          style: Theme.of(context).textTheme.headlineSmall
+              ?.copyWith(fontWeight: FontWeight.w900),
         ),
         const SizedBox(height: 6),
         Text(
-          registerMode
-              ? 'Elige cómo quieres empezar a usar OZIRAF.'
-              : 'Tu sesión quedará guardada de forma segura en este dispositivo.',
+          registerMode ? 'Elige cómo quieres empezar a usar OZIRAF.' : 'Tu sesión quedará guardada de forma segura en este dispositivo.',
           style: const TextStyle(color: OzirafColors.muted),
         ),
         const SizedBox(height: 16),
@@ -1074,17 +1078,14 @@ class _AccountScreenState extends State<AccountScreen> {
           onPressed: busy
               ? null
               : () => setState(() {
-                    registerMode = !registerMode;
-                    message = null;
-                  }),
+                  registerMode = !registerMode;
+                  message = null;
+                }),
           child: Text(registerMode ? 'Ya tengo cuenta' : 'Crear una cuenta'),
         ),
         if (message != null) ...[
           const SizedBox(height: 8),
-          Text(
-            message!,
-            style: const TextStyle(fontWeight: FontWeight.w700),
-          ),
+          Text(message!, style: const TextStyle(fontWeight: FontWeight.w700)),
         ],
       ],
     );
@@ -1200,9 +1201,8 @@ class PlaceholderPanel extends StatelessWidget {
                 const SizedBox(height: 14),
                 Text(
                   title,
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.w900,
-                      ),
+                  style: Theme.of(context).textTheme.headlineSmall
+                      ?.copyWith(fontWeight: FontWeight.w900),
                 ),
                 const SizedBox(height: 8),
                 Text(
@@ -1238,11 +1238,7 @@ class LoginRequiredPanel extends StatelessWidget {
 }
 
 class ErrorPanel extends StatelessWidget {
-  const ErrorPanel({
-    super.key,
-    required this.message,
-    required this.onRetry,
-  });
+  const ErrorPanel({super.key, required this.message, required this.onRetry});
   final String message;
   final Future<void> Function() onRetry;
 
@@ -1280,6 +1276,9 @@ class ServicePost {
     required this.providerName,
     required this.providerPhoto,
     required this.media,
+    this.averageRating,
+    this.reviewCount = 0,
+    this.latestReview,
   });
 
   final String id;
@@ -1292,20 +1291,45 @@ class ServicePost {
   final String providerName;
   final String providerPhoto;
   final List<PostMediaItem> media;
+  final double? averageRating;
+  final int reviewCount;
+  final ServiceReviewPreview? latestReview;
+
+  ServicePost withLatestReview(ServiceReviewPreview review) {
+    return ServicePost(
+      id: id,
+      title: title,
+      description: description,
+      category: category,
+      city: city,
+      state: state,
+      price: price,
+      providerName: providerName,
+      providerPhoto: providerPhoto,
+      media: media,
+      averageRating: averageRating,
+      reviewCount: reviewCount,
+      latestReview: review,
+    );
+  }
 
   factory ServicePost.fromJson(Map<String, dynamic> json) {
     final user = json['user'] is Map<String, dynamic>
         ? json['user'] as Map<String, dynamic>
         : <String, dynamic>{};
-    final provider = '${text(user['firstName'])} ${text(user['lastName'])}'.trim();
+    final provider = '${text(user['firstName'])} ${text(user['lastName'])}'
+        .trim();
     final rawMedia = json['media'];
     final media = rawMedia is List
         ? rawMedia
-            .whereType<Map<String, dynamic>>()
-            .map(PostMediaItem.fromJson)
-            .where((item) => item.id.isNotEmpty)
-            .toList()
+              .whereType<Map<String, dynamic>>()
+              .map(PostMediaItem.fromJson)
+              .where((item) => item.id.isNotEmpty)
+              .toList()
         : <PostMediaItem>[];
+    final averageValue = json['averageRating'];
+    final countValue = json['reviewCount'];
+    final latestValue = json['latestReview'];
 
     return ServicePost(
       id: text(json['id']),
@@ -1318,6 +1342,41 @@ class ServicePost {
       providerName: provider.isEmpty ? 'Anunciante OZIRAF' : provider,
       providerPhoto: text(user['profilePhoto']),
       media: media,
+      averageRating: averageValue is num ? averageValue.toDouble() : null,
+      reviewCount: countValue is num ? countValue.toInt() : 0,
+      latestReview: latestValue is Map<String, dynamic>
+          ? ServiceReviewPreview.fromJson(latestValue)
+          : null,
+    );
+  }
+}
+
+class ServiceReviewPreview {
+  const ServiceReviewPreview({
+    required this.rating,
+    required this.comment,
+    required this.authorName,
+    required this.createdAt,
+  });
+
+  final int rating;
+  final String comment;
+  final String authorName;
+  final DateTime? createdAt;
+
+  factory ServiceReviewPreview.fromJson(Map<String, dynamic> json) {
+    final author = json['author'] is Map<String, dynamic>
+        ? json['author'] as Map<String, dynamic>
+        : <String, dynamic>{};
+    final name = '${text(author['firstName'])} ${text(author['lastName'])}'
+        .trim();
+    final ratingValue = json['rating'];
+
+    return ServiceReviewPreview(
+      rating: ratingValue is num ? ratingValue.toInt().clamp(0, 5) : 0,
+      comment: text(json['comment']),
+      authorName: name.isEmpty ? 'Usuario OZIRAF' : name,
+      createdAt: DateTime.tryParse(text(json['createdAt'])),
     );
   }
 }
@@ -1345,7 +1404,7 @@ class OzirafApiClient {
         .timeout(const Duration(seconds: 10));
     final payload = decodePayload(response.body);
     ensureSuccess(response.statusCode, payload);
-    return postsFromPayload(payload);
+    return _hydrateLatestReviews(postsFromPayload(payload));
   }
 
   static Future<String> login({
@@ -1356,10 +1415,7 @@ class OzirafApiClient {
         .post(
           Uri.parse('$baseUrl/auth/login'),
           headers: const {'Content-Type': 'application/json'},
-          body: jsonEncode({
-            'email': email.trim(),
-            'password': password,
-          }),
+          body: jsonEncode({'email': email.trim(), 'password': password}),
         )
         .timeout(const Duration(seconds: 10));
     final payload = decodePayload(response.body);
@@ -1373,10 +1429,7 @@ class OzirafApiClient {
 
   static Future<OzirafProfile> fetchProfile(String token) async {
     final response = await http
-        .get(
-          Uri.parse('$baseUrl/users/profile'),
-          headers: authHeaders(token),
-        )
+        .get(Uri.parse('$baseUrl/users/profile'), headers: authHeaders(token))
         .timeout(const Duration(seconds: 10));
     final payload = decodePayload(response.body);
     ensureSuccess(response.statusCode, payload);
@@ -1395,7 +1448,37 @@ class OzirafApiClient {
         .timeout(const Duration(seconds: 10));
     final payload = decodePayload(response.body);
     ensureSuccess(response.statusCode, payload);
-    return postsFromPayload(payload);
+    return _hydrateLatestReviews(postsFromPayload(payload));
+  }
+
+  static Future<List<ServicePost>> _hydrateLatestReviews(
+    List<ServicePost> posts,
+  ) async {
+    return Future.wait(
+      posts.map((post) async {
+        if (post.reviewCount == 0 || post.latestReview != null) return post;
+
+        try {
+          final response = await http
+              .get(
+                Uri.parse(
+                  '$baseUrl/reviews/posts/${Uri.encodeComponent(post.id)}'
+                  '?page=1&limit=1',
+                ),
+              )
+              .timeout(const Duration(seconds: 10));
+          final payload = decodePayload(response.body);
+          ensureSuccess(response.statusCode, payload);
+          final data = payload is Map<String, dynamic> ? payload['data'] : null;
+          if (data is! List || data.isEmpty) return post;
+          final review = data.first;
+          if (review is! Map<String, dynamic>) return post;
+          return post.withLatestReview(ServiceReviewPreview.fromJson(review));
+        } catch (_) {
+          return post;
+        }
+      }),
+    );
   }
 
   static Future<void> register({
@@ -1428,9 +1511,9 @@ class OzirafApiClient {
 }
 
 Map<String, String> authHeaders(String token) => {
-      'Content-Type': 'application/json',
-      'Authorization': 'Bearer $token',
-    };
+  'Content-Type': 'application/json',
+  'Authorization': 'Bearer $token',
+};
 
 Object? decodePayload(String body) {
   if (body.trim().isEmpty) return null;

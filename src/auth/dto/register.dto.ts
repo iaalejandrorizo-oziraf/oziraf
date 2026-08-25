@@ -105,5 +105,19 @@ export class RegisterDto {
   @IsString()
   @IsUrl({ require_protocol: true })
   @MaxLength(500)
+  tiktokUrl?: string;
+
+  @IsOptional()
+  @Trim()
+  @IsString()
+  @IsUrl({ require_protocol: true })
+  @MaxLength(500)
+  xUrl?: string;
+
+  @IsOptional()
+  @Trim()
+  @IsString()
+  @IsUrl({ require_protocol: true })
+  @MaxLength(500)
   websiteUrl?: string;
 }

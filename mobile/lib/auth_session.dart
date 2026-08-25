@@ -1,18 +1,22 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
+import 'web_session_storage_stub.dart'
+    if (dart.library.html) 'web_session_storage_web.dart'
+    as web_storage;
+
 enum OzirafAccountType { solicitante, anunciante }
 
 extension OzirafAccountTypeValue on OzirafAccountType {
   String get apiValue => switch (this) {
-        OzirafAccountType.solicitante => 'SOLICITANTE',
-        OzirafAccountType.anunciante => 'ANUNCIANTE',
-      };
+    OzirafAccountType.solicitante => 'SOLICITANTE',
+    OzirafAccountType.anunciante => 'ANUNCIANTE',
+  };
 
   String get label => switch (this) {
-        OzirafAccountType.solicitante => 'Solicitante',
-        OzirafAccountType.anunciante => 'Anunciante',
-      };
+    OzirafAccountType.solicitante => 'Solicitante',
+    OzirafAccountType.anunciante => 'Anunciante',
+  };
 }
 
 OzirafAccountType accountTypeFromValue(Object? value) {
@@ -35,6 +39,12 @@ class OzirafProfile {
     required this.accountType,
     this.profilePhoto = '',
     this.description = '',
+    this.whatsapp = '',
+    this.instagramUrl = '',
+    this.facebookUrl = '',
+    this.tiktokUrl = '',
+    this.xUrl = '',
+    this.websiteUrl = '',
   });
 
   final String id;
@@ -48,6 +58,20 @@ class OzirafProfile {
   final OzirafAccountType accountType;
   final String profilePhoto;
   final String description;
+  final String whatsapp;
+  final String instagramUrl;
+  final String facebookUrl;
+  final String tiktokUrl;
+  final String xUrl;
+  final String websiteUrl;
+
+  bool get hasSocialLinks =>
+      whatsapp.isNotEmpty ||
+      instagramUrl.isNotEmpty ||
+      facebookUrl.isNotEmpty ||
+      tiktokUrl.isNotEmpty ||
+      xUrl.isNotEmpty ||
+      websiteUrl.isNotEmpty;
 
   String get fullName {
     final value = '$firstName $lastName'.trim();
@@ -77,6 +101,12 @@ class OzirafProfile {
     String? phone,
     String? profilePhoto,
     String? description,
+    String? whatsapp,
+    String? instagramUrl,
+    String? facebookUrl,
+    String? tiktokUrl,
+    String? xUrl,
+    String? websiteUrl,
   }) {
     final updated = OzirafProfile(
       id: id,
@@ -90,6 +120,12 @@ class OzirafProfile {
       accountType: accountType ?? this.accountType,
       profilePhoto: profilePhoto ?? this.profilePhoto,
       description: description ?? this.description,
+      whatsapp: whatsapp ?? this.whatsapp,
+      instagramUrl: instagramUrl ?? this.instagramUrl,
+      facebookUrl: facebookUrl ?? this.facebookUrl,
+      tiktokUrl: tiktokUrl ?? this.tiktokUrl,
+      xUrl: xUrl ?? this.xUrl,
+      websiteUrl: websiteUrl ?? this.websiteUrl,
     );
     OzirafSessionStore.profileNotifier.value = updated;
     return updated;
@@ -110,6 +146,12 @@ class OzirafProfile {
       accountType: accountTypeFromValue(json['accountType']),
       profilePhoto: text(json['profilePhoto']),
       description: text(json['description']),
+      whatsapp: text(json['whatsapp']),
+      instagramUrl: text(json['instagramUrl']),
+      facebookUrl: text(json['facebookUrl']),
+      tiktokUrl: text(json['tiktokUrl']),
+      xUrl: text(json['xUrl']),
+      websiteUrl: text(json['websiteUrl']),
     );
     OzirafSessionStore.profileNotifier.value = profile;
     return profile;
@@ -120,28 +162,27 @@ class OzirafSessionStore {
   static const _tokenKey = 'oziraf_access_token';
   static const _accountTypeKey = 'oziraf_account_type';
 
-  static final ValueNotifier<String?> tokenNotifier = ValueNotifier<String?>(null);
+  static final ValueNotifier<String?> tokenNotifier = ValueNotifier<String?>(
+    null,
+  );
   static final ValueNotifier<OzirafProfile?> profileNotifier =
       ValueNotifier<OzirafProfile?>(null);
-
-  // The local development web app is served over HTTP. Secure web storage
-  // requires HTTPS, so web sessions intentionally remain in memory only.
-  static String? _webToken;
-  static String? _webAccountType;
 
   final FlutterSecureStorage _storage = FlutterSecureStorage(
     aOptions: const AndroidOptions(),
   );
 
   Future<String?> readToken() async {
-    final value = kIsWeb ? _webToken : await _storage.read(key: _tokenKey);
+    final value = kIsWeb
+        ? web_storage.readSessionValue(_tokenKey)
+        : await _storage.read(key: _tokenKey);
     tokenNotifier.value = value;
     return value;
   }
 
   Future<void> saveToken(String token) async {
     if (kIsWeb) {
-      _webToken = token;
+      web_storage.writeSessionValue(_tokenKey, token);
       tokenNotifier.value = token;
       return;
     }
@@ -151,7 +192,7 @@ class OzirafSessionStore {
 
   Future<OzirafAccountType?> readAccountType() async {
     final value = kIsWeb
-        ? _webAccountType
+        ? web_storage.readSessionValue(_accountTypeKey)
         : await _storage.read(key: _accountTypeKey);
     if (value == null || value.isEmpty) return null;
     return accountTypeFromValue(value);
@@ -159,7 +200,7 @@ class OzirafSessionStore {
 
   Future<void> saveAccountType(OzirafAccountType type) async {
     if (kIsWeb) {
-      _webAccountType = type.apiValue;
+      web_storage.writeSessionValue(_accountTypeKey, type.apiValue);
       return;
     }
     await _storage.write(key: _accountTypeKey, value: type.apiValue);
@@ -167,8 +208,8 @@ class OzirafSessionStore {
 
   Future<void> clear() async {
     if (kIsWeb) {
-      _webToken = null;
-      _webAccountType = null;
+      web_storage.removeSessionValue(_tokenKey);
+      web_storage.removeSessionValue(_accountTypeKey);
       tokenNotifier.value = null;
       profileNotifier.value = null;
       return;

@@ -12,10 +12,12 @@ describe('PostsController', () => {
     findMyStats: jest.Mock;
     findAllForAdmin: jest.Mock;
     findOne: jest.Mock;
+    findMedia: jest.Mock;
     update: jest.Mock;
     updateStatus: jest.Mock;
     updateStatusForAdmin: jest.Mock;
     remove: jest.Mock;
+    removeMedia: jest.Mock;
     search: jest.Mock;
   };
 
@@ -28,10 +30,12 @@ describe('PostsController', () => {
       findMyStats: jest.fn(),
       findAllForAdmin: jest.fn(),
       findOne: jest.fn(),
+      findMedia: jest.fn(),
       update: jest.fn(),
       updateStatus: jest.fn(),
       updateStatusForAdmin: jest.fn(),
       remove: jest.fn(),
+      removeMedia: jest.fn(),
       search: jest.fn(),
     };
 
@@ -266,13 +270,49 @@ describe('PostsController', () => {
       },
     );
 
-    expect(postsService.updateStatus).toHaveBeenCalledWith(
-      'post-1',
-      'user-1',
-      {
-        status: 'INACTIVE',
-      },
-    );
+    expect(postsService.updateStatus).toHaveBeenCalledWith('post-1', 'user-1', {
+      status: 'INACTIVE',
+    });
     expect(result).toBe(post);
+  });
+
+  it('removes media from a post for the authenticated user', async () => {
+    postsService.removeMedia.mockResolvedValue({ id: 'media-1' });
+
+    const result = await controller.removeMedia('post-1', 'media-1', {
+      user: { userId: 'user-1' },
+    });
+
+    expect(postsService.removeMedia).toHaveBeenCalledWith(
+      'post-1',
+      'media-1',
+      'user-1',
+    );
+    expect(result).toEqual({ id: 'media-1' });
+  });
+
+  it('allows browsers to stream media across the web and API origins', async () => {
+    postsService.findMedia.mockResolvedValue({
+      data: Buffer.from([1, 2, 3, 4]),
+      mimeType: 'video/mp4',
+    });
+    const response = {
+      setHeader: jest.fn(),
+      status: jest.fn().mockReturnThis(),
+      send: jest.fn(),
+      end: jest.fn(),
+    };
+
+    await controller.getMedia('media-1', 'bytes=0-1', response as never);
+
+    expect(response.setHeader).toHaveBeenCalledWith(
+      'Cross-Origin-Resource-Policy',
+      'cross-origin',
+    );
+    expect(response.setHeader).toHaveBeenCalledWith(
+      'Access-Control-Expose-Headers',
+      'Accept-Ranges, Content-Length, Content-Range',
+    );
+    expect(response.status).toHaveBeenCalledWith(206);
   });
 });

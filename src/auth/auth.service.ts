@@ -55,6 +55,8 @@ export class AuthService {
       whatsapp: registerDto.whatsapp,
       instagramUrl: registerDto.instagramUrl,
       facebookUrl: registerDto.facebookUrl,
+      tiktokUrl: registerDto.tiktokUrl,
+      xUrl: registerDto.xUrl,
       websiteUrl: registerDto.websiteUrl,
     });
   }

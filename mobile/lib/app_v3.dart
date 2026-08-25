@@ -33,7 +33,9 @@ class _OzirafAppState extends State<OzirafApp> {
     }
 
     try {
-      var restoredProfile = await legacy.OzirafApiClient.fetchProfile(savedToken);
+      var restoredProfile = await legacy.OzirafApiClient.fetchProfile(
+        savedToken,
+      );
       final storedType = await sessionStore.readAccountType();
       if (storedType != null) {
         restoredProfile = restoredProfile.copyWith(accountType: storedType);
@@ -68,7 +70,8 @@ class _OzirafAppState extends State<OzirafApp> {
     var loadedProfile = await legacy.OzirafApiClient.fetchProfile(accessToken);
     final mine = await legacy.OzirafApiClient.fetchMyPosts(accessToken);
     final storedType = await sessionStore.readAccountType();
-    final type = storedType ??
+    final type =
+        storedType ??
         (mine.isNotEmpty
             ? OzirafAccountType.anunciante
             : loadedProfile.accountType);
@@ -182,12 +185,7 @@ class _HomeShellState extends State<_HomeShell> {
           _Tab.publicar,
           _Tab.cuenta,
         ]
-      : const [
-          _Tab.buscar,
-          _Tab.actividad,
-          _Tab.solicitudes,
-          _Tab.cuenta,
-        ];
+      : const [_Tab.buscar, _Tab.actividad, _Tab.solicitudes, _Tab.cuenta];
 
   void goHome() => setState(() => tab = _Tab.buscar);
 
@@ -231,7 +229,8 @@ class _HomeShellState extends State<_HomeShell> {
       body: SafeArea(child: _body()),
       bottomNavigationBar: NavigationBar(
         selectedIndex: activeTabs.indexOf(tab),
-        onDestinationSelected: (index) => setState(() => tab = activeTabs[index]),
+        onDestinationSelected: (index) =>
+            setState(() => tab = activeTabs[index]),
         destinations: activeTabs
             .map(
               (item) => NavigationDestination(
@@ -253,7 +252,8 @@ class _HomeShellState extends State<_HomeShell> {
         if (widget.token == null) {
           return const legacy.LoginRequiredPanel(
             title: 'Tu actividad',
-            message: 'Inicia sesión para ver favoritos o administrar tus anuncios.',
+            message:
+                'Inicia sesión para ver favoritos o administrar tus anuncios.',
           );
         }
         return isAdvertiser
@@ -271,7 +271,9 @@ class _HomeShellState extends State<_HomeShell> {
               )
             : legacy.PlaceholderPanel(
                 icon: Icons.chat_bubble_outline,
-                title: isAdvertiser ? 'Solicitudes recibidas' : 'Mis solicitudes',
+                title: isAdvertiser
+                    ? 'Solicitudes recibidas'
+                    : 'Mis solicitudes',
                 message: isAdvertiser
                     ? 'Aquí aparecerán las personas interesadas en tus anuncios.'
                     : 'Aquí podrás dar seguimiento a tus solicitudes.',
@@ -327,14 +329,16 @@ class _HomeShellState extends State<_HomeShell> {
 
 enum _AccountMode { login, register, recovery }
 
-class _AccountScreen extends StatefulWidget {
-  const _AccountScreen({
+class OzirafAccountScreen extends StatelessWidget {
+  const OzirafAccountScreen({
+    super.key,
     required this.token,
     required this.profile,
     required this.onLogin,
     required this.onLogout,
     required this.onAccountTypeChanged,
     required this.onGoHome,
+    this.onEditProfile,
   });
 
   final String? token;
@@ -343,6 +347,40 @@ class _AccountScreen extends StatefulWidget {
   final Future<void> Function() onLogout;
   final Future<void> Function(OzirafAccountType type) onAccountTypeChanged;
   final VoidCallback onGoHome;
+  final VoidCallback? onEditProfile;
+
+  @override
+  Widget build(BuildContext context) {
+    return _AccountScreen(
+      token: token,
+      profile: profile,
+      onLogin: onLogin,
+      onLogout: onLogout,
+      onAccountTypeChanged: onAccountTypeChanged,
+      onGoHome: onGoHome,
+      onEditProfile: onEditProfile,
+    );
+  }
+}
+
+class _AccountScreen extends StatefulWidget {
+  const _AccountScreen({
+    required this.token,
+    required this.profile,
+    required this.onLogin,
+    required this.onLogout,
+    required this.onAccountTypeChanged,
+    required this.onGoHome,
+    this.onEditProfile,
+  });
+
+  final String? token;
+  final OzirafProfile? profile;
+  final Future<void> Function(String token) onLogin;
+  final Future<void> Function() onLogout;
+  final Future<void> Function(OzirafAccountType type) onAccountTypeChanged;
+  final VoidCallback onGoHome;
+  final VoidCallback? onEditProfile;
 
   @override
   State<_AccountScreen> createState() => _AccountScreenState();
@@ -478,7 +516,10 @@ class _AccountScreenState extends State<_AccountScreen> {
     if (recoveryToken.text.trim().isEmpty ||
         recoveryPassword.text.length < 8 ||
         busy) {
-      setState(() => message = 'Escribe el código y una contraseña de al menos 8 caracteres.');
+      setState(
+        () => message =
+            'Escribe el código y una contraseña de al menos 8 caracteres.',
+      );
       return;
     }
     setState(() {
@@ -519,9 +560,8 @@ class _AccountScreenState extends State<_AccountScreen> {
           const SizedBox(height: 14),
           Text(
             'Mi cuenta',
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.w900,
-                ),
+            style: Theme.of(context).textTheme.headlineSmall
+                ?.copyWith(fontWeight: FontWeight.w900),
           ),
           const SizedBox(height: 14),
           Card(
@@ -532,22 +572,83 @@ class _AccountScreenState extends State<_AccountScreen> {
                 children: [
                   Text(
                     profile.fullName,
-                    style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900),
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w900,
+                    ),
                   ),
                   const SizedBox(height: 4),
                   Text(profile.email),
                   if (profile.city.isNotEmpty || profile.state.isNotEmpty) ...[
                     const SizedBox(height: 4),
-                    Text('${profile.city}${profile.city.isNotEmpty && profile.state.isNotEmpty ? ', ' : ''}${profile.state}'),
+                    Text(
+                      '${profile.city}${profile.city.isNotEmpty && profile.state.isNotEmpty ? ', ' : ''}${profile.state}',
+                    ),
                   ],
                   const SizedBox(height: 12),
                   Chip(label: Text(profile.accountType.label)),
+                  if (profile.hasSocialLinks) ...[
+                    const SizedBox(height: 10),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        if (profile.whatsapp.isNotEmpty)
+                          const Chip(
+                            avatar: Icon(Icons.chat_outlined, size: 18),
+                            label: Text('WhatsApp'),
+                          ),
+                        if (profile.instagramUrl.isNotEmpty)
+                          const Chip(
+                            avatar: Icon(Icons.camera_alt_outlined, size: 18),
+                            label: Text('Instagram'),
+                          ),
+                        if (profile.facebookUrl.isNotEmpty)
+                          const Chip(
+                            avatar: Icon(Icons.facebook_outlined, size: 18),
+                            label: Text('Facebook'),
+                          ),
+                        if (profile.tiktokUrl.isNotEmpty)
+                          const Chip(
+                            avatar: Icon(Icons.music_note_outlined, size: 18),
+                            label: Text('TikTok'),
+                          ),
+                        if (profile.xUrl.isNotEmpty)
+                          const Chip(
+                            avatar: Icon(
+                              Icons.alternate_email_outlined,
+                              size: 18,
+                            ),
+                            label: Text('X'),
+                          ),
+                        if (profile.websiteUrl.isNotEmpty)
+                          const Chip(
+                            avatar: Icon(Icons.language_outlined, size: 18),
+                            label: Text('Sitio web'),
+                          ),
+                      ],
+                    ),
+                  ],
                 ],
               ),
             ),
           ),
           const SizedBox(height: 14),
-          const Text('Usar OZIRAF como', style: TextStyle(fontWeight: FontWeight.w900)),
+          if (widget.onEditProfile != null) ...[
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.tonalIcon(
+                onPressed: widget.onEditProfile,
+                icon: const Icon(Icons.edit_outlined),
+                label: const Text('Editar perfil, foto y redes'),
+              ),
+            ),
+            const SizedBox(height: 14),
+          ],
+          const Text(
+            'Usar OZIRAF como',
+            style: TextStyle(fontWeight: FontWeight.w900),
+          ),
           const SizedBox(height: 8),
           SegmentedButton<OzirafAccountType>(
             segments: const [
@@ -589,7 +690,10 @@ class _AccountScreenState extends State<_AccountScreen> {
           Card(
             child: Padding(
               padding: const EdgeInsets.all(12),
-              child: Text(message!, style: const TextStyle(fontWeight: FontWeight.w700)),
+              child: Text(
+                message!,
+                style: const TextStyle(fontWeight: FontWeight.w700),
+              ),
             ),
           ),
         ],
@@ -605,12 +709,13 @@ class _AccountScreenState extends State<_AccountScreen> {
         children: [
           Text(
             'Iniciar sesión',
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.w900,
-                ),
+            style: Theme.of(context).textTheme.headlineSmall
+                ?.copyWith(fontWeight: FontWeight.w900),
           ),
           const SizedBox(height: 6),
-          const Text('Tu sesión quedará guardada de forma segura en este dispositivo.'),
+          const Text(
+            'Tu sesión quedará guardada de forma segura en este dispositivo.',
+          ),
           const SizedBox(height: 16),
           legacy.OzirafField(
             controller: email,
@@ -639,10 +744,10 @@ class _AccountScreenState extends State<_AccountScreen> {
               onPressed: busy
                   ? null
                   : () => setState(() {
-                        mode = _AccountMode.recovery;
-                        recoveryEmail.text = email.text;
-                        message = null;
-                      }),
+                      mode = _AccountMode.recovery;
+                      recoveryEmail.text = email.text;
+                      message = null;
+                    }),
               child: const Text('Olvidé mi contraseña'),
             ),
           ),
@@ -651,9 +756,9 @@ class _AccountScreenState extends State<_AccountScreen> {
               onPressed: busy
                   ? null
                   : () => setState(() {
-                        mode = _AccountMode.register;
-                        message = null;
-                      }),
+                      mode = _AccountMode.register;
+                      message = null;
+                    }),
               child: const Text('Crear una cuenta'),
             ),
           ),
@@ -670,9 +775,8 @@ class _AccountScreenState extends State<_AccountScreen> {
         children: [
           Text(
             'Crear cuenta',
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.w900,
-                ),
+            style: Theme.of(context).textTheme.headlineSmall
+                ?.copyWith(fontWeight: FontWeight.w900),
           ),
           const SizedBox(height: 14),
           SegmentedButton<OzirafAccountType>(
@@ -740,9 +844,9 @@ class _AccountScreenState extends State<_AccountScreen> {
               onPressed: busy
                   ? null
                   : () => setState(() {
-                        mode = _AccountMode.login;
-                        message = null;
-                      }),
+                      mode = _AccountMode.login;
+                      message = null;
+                    }),
               child: const Text('Ya tengo cuenta'),
             ),
           ),
@@ -759,9 +863,8 @@ class _AccountScreenState extends State<_AccountScreen> {
         children: [
           Text(
             'Recuperar contraseña',
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.w900,
-                ),
+            style: Theme.of(context).textTheme.headlineSmall
+                ?.copyWith(fontWeight: FontWeight.w900),
           ),
           const SizedBox(height: 6),
           const Text(
@@ -787,7 +890,9 @@ class _AccountScreenState extends State<_AccountScreen> {
             onPressed: busy
                 ? null
                 : () => setState(() => showRecoveryCode = !showRecoveryCode),
-            child: Text(showRecoveryCode ? 'Ocultar código' : 'Ya tengo un código'),
+            child: Text(
+              showRecoveryCode ? 'Ocultar código' : 'Ya tengo un código',
+            ),
           ),
           if (showRecoveryCode) ...[
             const SizedBox(height: 8),
@@ -817,9 +922,9 @@ class _AccountScreenState extends State<_AccountScreen> {
               onPressed: busy
                   ? null
                   : () => setState(() {
-                        mode = _AccountMode.login;
-                        message = null;
-                      }),
+                      mode = _AccountMode.login;
+                      message = null;
+                    }),
               child: const Text('Volver a iniciar sesión'),
             ),
           ),
@@ -840,7 +945,7 @@ class _HomeButton extends StatelessWidget {
       child: OutlinedButton.icon(
         onPressed: onPressed,
         icon: const Icon(Icons.home_outlined),
-        label: const Text('Volver a Buscar'),
+        label: const Text('Volver a Inicio'),
       ),
     );
   }
@@ -850,7 +955,9 @@ class _PasswordRecoveryApi {
   static Future<String> request(String email) async {
     final response = await http
         .post(
-          Uri.parse('${legacy.OzirafApiClient.baseUrl}/auth/password-reset/request'),
+          Uri.parse(
+            '${legacy.OzirafApiClient.baseUrl}/auth/password-reset/request',
+          ),
           headers: const {'Content-Type': 'application/json'},
           body: jsonEncode({'email': email.trim()}),
         )
@@ -870,12 +977,11 @@ class _PasswordRecoveryApi {
   }) async {
     final response = await http
         .post(
-          Uri.parse('${legacy.OzirafApiClient.baseUrl}/auth/password-reset/confirm'),
+          Uri.parse(
+            '${legacy.OzirafApiClient.baseUrl}/auth/password-reset/confirm',
+          ),
           headers: const {'Content-Type': 'application/json'},
-          body: jsonEncode({
-            'token': token.trim(),
-            'newPassword': newPassword,
-          }),
+          body: jsonEncode({'token': token.trim(), 'newPassword': newPassword}),
         )
         .timeout(const Duration(seconds: 10));
     final payload = _decode(response.body);

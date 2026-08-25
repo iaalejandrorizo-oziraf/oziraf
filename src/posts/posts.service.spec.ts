@@ -18,6 +18,11 @@ describe('PostsService', () => {
       update: jest.Mock;
       delete: jest.Mock;
     };
+    postMedia?: {
+      findMany: jest.Mock;
+      findUnique: jest.Mock;
+      delete: jest.Mock;
+    };
   };
 
   const expectedPostInclude = {
@@ -34,6 +39,8 @@ describe('PostsService', () => {
         whatsapp: true,
         instagramUrl: true,
         facebookUrl: true,
+        tiktokUrl: true,
+        xUrl: true,
         websiteUrl: true,
       },
     },
@@ -363,6 +370,45 @@ describe('PostsService', () => {
       include: expectedPostInclude,
     });
     expect(result).toBe(updatedPost);
+  });
+
+  it('removes media when the post belongs to the user', async () => {
+    prisma.postMedia = {
+      findMany: jest.fn().mockResolvedValue([]),
+      findUnique: jest.fn(),
+      delete: jest.fn(),
+    };
+    prisma.postMedia.findUnique.mockResolvedValue({
+      id: 'media-1',
+      postId: 'post-1',
+      post: { userId: 'user-1', status: 'ACTIVE' },
+    });
+    prisma.postMedia.delete.mockResolvedValue({ id: 'media-1' });
+
+    await expect(
+      service.removeMedia('post-1', 'media-1', 'user-1'),
+    ).resolves.toEqual({ id: 'media-1' });
+    expect(prisma.postMedia.delete).toHaveBeenCalledWith({
+      where: { id: 'media-1' },
+    });
+  });
+
+  it('rejects removing media from another user post', async () => {
+    prisma.postMedia = {
+      findMany: jest.fn().mockResolvedValue([]),
+      findUnique: jest.fn(),
+      delete: jest.fn(),
+    };
+    prisma.postMedia.findUnique.mockResolvedValue({
+      id: 'media-1',
+      postId: 'post-1',
+      post: { userId: 'owner-1', status: 'ACTIVE' },
+    });
+
+    await expect(
+      service.removeMedia('post-1', 'media-1', 'user-1'),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+    expect(prisma.postMedia.delete).not.toHaveBeenCalled();
   });
 
   it('rejects updates for missing posts', async () => {

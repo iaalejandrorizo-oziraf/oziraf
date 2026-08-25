@@ -23,6 +23,8 @@ export const publicUserSelect = {
   whatsapp: true,
   instagramUrl: true,
   facebookUrl: true,
+  tiktokUrl: true,
+  xUrl: true,
   websiteUrl: true,
   status: true,
   city: true,
@@ -52,6 +54,8 @@ export class UsersService {
     whatsapp?: string;
     instagramUrl?: string;
     facebookUrl?: string;
+    tiktokUrl?: string;
+    xUrl?: string;
     websiteUrl?: string;
   }) {
     return this.prisma.user.create({
@@ -236,6 +240,8 @@ export class UsersService {
       whatsapp?: string;
       instagramUrl?: string;
       facebookUrl?: string;
+      tiktokUrl?: string;
+      xUrl?: string;
       websiteUrl?: string;
     },
   ) {

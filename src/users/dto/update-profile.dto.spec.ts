@@ -27,4 +27,23 @@ describe('UpdateProfileDto', () => {
 
     expect(errors.map((error) => error.property)).toContain('profilePhoto');
   });
+
+  it('accepts social links and allows clearing them', async () => {
+    const dto = plainToInstance(UpdateProfileDto, {
+      whatsapp: '  +52 228 123 4567  ',
+      instagramUrl: '  https://instagram.com/oziraf  ',
+      facebookUrl: '',
+      tiktokUrl: '  https://tiktok.com/@oziraf  ',
+      xUrl: '  https://x.com/oziraf  ',
+      websiteUrl: '',
+    });
+
+    const errors = await validate(dto);
+
+    expect(errors).toHaveLength(0);
+    expect(dto.whatsapp).toBe('+52 228 123 4567');
+    expect(dto.instagramUrl).toBe('https://instagram.com/oziraf');
+    expect(dto.tiktokUrl).toBe('https://tiktok.com/@oziraf');
+    expect(dto.xUrl).toBe('https://x.com/oziraf');
+  });
 });

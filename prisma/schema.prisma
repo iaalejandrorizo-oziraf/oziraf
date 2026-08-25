@@ -23,6 +23,8 @@ model User {
   whatsapp                String?
   instagramUrl            String?
   facebookUrl             String?
+  tiktokUrl               String?
+  xUrl                    String?
   websiteUrl              String?
   status                  String                   @default("ACTIVE")
   city                    String?

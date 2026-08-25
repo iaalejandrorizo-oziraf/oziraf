@@ -34,6 +34,8 @@ const postUserInclude = {
       whatsapp: true,
       instagramUrl: true,
       facebookUrl: true,
+      tiktokUrl: true,
+      xUrl: true,
       websiteUrl: true,
     },
   },
@@ -78,9 +80,9 @@ function withRating<T extends { id: string; reviews?: { rating: number }[] }>(
   };
 }
 
-function withRatings<
-  T extends { id: string; reviews?: { rating: number }[] },
->(posts: T[]) {
+function withRatings<T extends { id: string; reviews?: { rating: number }[] }>(
+  posts: T[],
+) {
   return posts.map((post) => withRating(post));
 }
 
@@ -137,6 +139,48 @@ export class PostsService {
       ...post,
       media: byPost.get(post.id) ?? [],
     }));
+  }
+
+  private async attachLatestReviews<T extends { id: string }>(posts: T[]) {
+    if (posts.length === 0 || !this.prisma.review) {
+      return posts;
+    }
+
+    const reviews = await this.prisma.review.findMany({
+      where: {
+        postId: {
+          in: posts.map((post) => post.id),
+        },
+      },
+      distinct: ['postId'],
+      orderBy: {
+        createdAt: 'desc',
+      },
+      select: {
+        postId: true,
+        rating: true,
+        comment: true,
+        createdAt: true,
+        author: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+          },
+        },
+      },
+    });
+
+    const byPost = new Map(reviews.map((review) => [review.postId, review]));
+    return posts.map((post) => ({
+      ...post,
+      latestReview: byPost.get(post.id) ?? null,
+    }));
+  }
+
+  private async enrichPosts<T extends { id: string }>(posts: T[]) {
+    const withMedia = await this.attachMediaMetadata(posts);
+    return this.attachLatestReviews(withMedia);
   }
 
   // Crear publicación
@@ -252,6 +296,35 @@ export class PostsService {
     return created;
   }
 
+  async removeMedia(id: string, mediaId: string, userId: string) {
+    const media = await this.prisma.postMedia.findUnique({
+      where: { id: mediaId },
+      select: {
+        id: true,
+        postId: true,
+        post: {
+          select: {
+            userId: true,
+            status: true,
+          },
+        },
+      },
+    });
+
+    if (!media || media.postId !== id || media.post.status === 'DELETED') {
+      throw new NotFoundException('El archivo no existe');
+    }
+
+    if (media.post.userId !== userId) {
+      throw new ForbiddenException(
+        'No tienes permiso para eliminar archivos de esta publicación',
+      );
+    }
+
+    await this.prisma.postMedia.delete({ where: { id: mediaId } });
+    return { id: mediaId };
+  }
+
   async findMedia(mediaId: string) {
     const media = await this.prisma.postMedia.findUnique({
       where: { id: mediaId },
@@ -291,7 +364,7 @@ export class PostsService {
       }),
     ]);
 
-    const enriched = await this.attachMediaMetadata(withRatings(posts));
+    const enriched = await this.enrichPosts(withRatings(posts));
     return buildPaginatedResponse(enriched, total, options);
   }
 
@@ -315,7 +388,7 @@ export class PostsService {
       }),
     ]);
 
-    const enriched = await this.attachMediaMetadata(withRatings(posts));
+    const enriched = await this.enrichPosts(withRatings(posts));
     return buildPaginatedResponse(enriched, total, options);
   }
 
@@ -421,7 +494,7 @@ export class PostsService {
       }),
     ]);
 
-    const enriched = await this.attachMediaMetadata(withRatings(posts));
+    const enriched = await this.enrichPosts(withRatings(posts));
     return buildPaginatedResponse(enriched, total, options);
   }
 
@@ -438,7 +511,7 @@ export class PostsService {
       throw new NotFoundException('La publicación no existe');
     }
 
-    const [enriched] = await this.attachMediaMetadata([withRating(post)]);
+    const [enriched] = await this.enrichPosts([withRating(post)]);
     return enriched;
   }
 
@@ -468,7 +541,7 @@ export class PostsService {
       include: postUserInclude,
     });
 
-    const [enriched] = await this.attachMediaMetadata([withRating(updated)]);
+    const [enriched] = await this.enrichPosts([withRating(updated)]);
     return enriched;
   }
 
@@ -503,7 +576,7 @@ export class PostsService {
       include: postUserInclude,
     });
 
-    const [enriched] = await this.attachMediaMetadata([withRating(updated)]);
+    const [enriched] = await this.enrichPosts([withRating(updated)]);
     return enriched;
   }
 
@@ -531,7 +604,7 @@ export class PostsService {
       include: postUserInclude,
     });
 
-    const [enriched] = await this.attachMediaMetadata([withRating(updated)]);
+    const [enriched] = await this.enrichPosts([withRating(updated)]);
     return enriched;
   }
 
@@ -644,7 +717,7 @@ export class PostsService {
       }),
     ]);
 
-    const enriched = await this.attachMediaMetadata(withRatings(posts));
+    const enriched = await this.enrichPosts(withRatings(posts));
     return buildPaginatedResponse(enriched, total, filters);
   }
 }

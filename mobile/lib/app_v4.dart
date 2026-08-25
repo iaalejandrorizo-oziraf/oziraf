@@ -170,6 +170,83 @@ class _ProfileAvatar extends StatelessWidget {
   }
 }
 
+enum _ProfileNetwork { whatsapp, instagram, facebook, tiktok, x, website }
+
+extension _ProfileNetworkDetails on _ProfileNetwork {
+  String get label => switch (this) {
+    _ProfileNetwork.whatsapp => 'WhatsApp',
+    _ProfileNetwork.instagram => 'Instagram',
+    _ProfileNetwork.facebook => 'Facebook',
+    _ProfileNetwork.tiktok => 'TikTok',
+    _ProfileNetwork.x => 'X',
+    _ProfileNetwork.website => 'Sitio web',
+  };
+
+  String get hint => switch (this) {
+    _ProfileNetwork.whatsapp => '+52 228 123 4567',
+    _ProfileNetwork.instagram => '@usuario o enlace',
+    _ProfileNetwork.facebook => 'Usuario, página o enlace',
+    _ProfileNetwork.tiktok => '@usuario o enlace',
+    _ProfileNetwork.x => '@usuario o enlace',
+    _ProfileNetwork.website => 'https://misitio.com',
+  };
+
+  IconData get icon => switch (this) {
+    _ProfileNetwork.whatsapp => Icons.chat_outlined,
+    _ProfileNetwork.instagram => Icons.camera_alt_outlined,
+    _ProfileNetwork.facebook => Icons.facebook_outlined,
+    _ProfileNetwork.tiktok => Icons.music_note_outlined,
+    _ProfileNetwork.x => Icons.alternate_email_outlined,
+    _ProfileNetwork.website => Icons.language_outlined,
+  };
+}
+
+_ProfileNetwork? _firstAvailableNetwork(Set<_ProfileNetwork> selected) {
+  for (final network in _ProfileNetwork.values) {
+    if (!selected.contains(network)) return network;
+  }
+  return null;
+}
+
+String _normalizeSocialValue(_ProfileNetwork network, String rawValue) {
+  final value = rawValue.trim();
+  if (value.isEmpty || network == _ProfileNetwork.whatsapp) return value;
+  if (value.startsWith('http://') || value.startsWith('https://')) {
+    return value;
+  }
+  if (value.startsWith('www.') ||
+      (value.contains('.') && !value.contains(' '))) {
+    return 'https://$value';
+  }
+
+  final handle = value.replaceFirst(RegExp(r'^@'), '');
+  return switch (network) {
+    _ProfileNetwork.instagram => 'https://instagram.com/$handle',
+    _ProfileNetwork.facebook => 'https://facebook.com/$handle',
+    _ProfileNetwork.tiktok => 'https://tiktok.com/@$handle',
+    _ProfileNetwork.x => 'https://x.com/$handle',
+    _ProfileNetwork.website => value,
+    _ProfileNetwork.whatsapp => value,
+  };
+}
+
+String? _validateSocialValue(_ProfileNetwork network, String? rawValue) {
+  final value = rawValue?.trim() ?? '';
+  if (value.isEmpty) return null;
+  if (network == _ProfileNetwork.whatsapp) {
+    return value.length <= 30 ? null : 'El número es demasiado largo';
+  }
+
+  final normalized = _normalizeSocialValue(network, value);
+  final uri = Uri.tryParse(normalized);
+  if (uri == null ||
+      !{'http', 'https'}.contains(uri.scheme) ||
+      uri.host.isEmpty) {
+    return 'Escribe un usuario o enlace válido';
+  }
+  return null;
+}
+
 Future<void> _showEditProfileDialog(
   BuildContext context,
   OzirafProfile profile,
@@ -180,8 +257,31 @@ Future<void> _showEditProfileDialog(
   final state = TextEditingController(text: profile.state);
   final profession = TextEditingController(text: profile.profession);
   final phone = TextEditingController(text: profile.phone);
+  final whatsapp = TextEditingController(text: profile.whatsapp);
+  final instagram = TextEditingController(text: profile.instagramUrl);
+  final facebook = TextEditingController(text: profile.facebookUrl);
+  final tiktok = TextEditingController(text: profile.tiktokUrl);
+  final x = TextEditingController(text: profile.xUrl);
+  final website = TextEditingController(text: profile.websiteUrl);
   final formKey = GlobalKey<FormState>();
   final picker = ImagePicker();
+  final socialControllers = <_ProfileNetwork, TextEditingController>{
+    _ProfileNetwork.whatsapp: whatsapp,
+    _ProfileNetwork.instagram: instagram,
+    _ProfileNetwork.facebook: facebook,
+    _ProfileNetwork.tiktok: tiktok,
+    _ProfileNetwork.x: x,
+    _ProfileNetwork.website: website,
+  };
+  final selectedNetworks = <_ProfileNetwork>{
+    if (profile.whatsapp.isNotEmpty) _ProfileNetwork.whatsapp,
+    if (profile.instagramUrl.isNotEmpty) _ProfileNetwork.instagram,
+    if (profile.facebookUrl.isNotEmpty) _ProfileNetwork.facebook,
+    if (profile.tiktokUrl.isNotEmpty) _ProfileNetwork.tiktok,
+    if (profile.xUrl.isNotEmpty) _ProfileNetwork.x,
+    if (profile.websiteUrl.isNotEmpty) _ProfileNetwork.website,
+  };
+  _ProfileNetwork? networkToAdd = _firstAvailableNetwork(selectedNetworks);
   var selectedPhoto = profile.profilePhoto;
   var saving = false;
   var pickingPhoto = false;
@@ -208,8 +308,8 @@ Future<void> _showEditProfileDialog(
       final mimeType = lowerName.endsWith('.png')
           ? 'image/png'
           : lowerName.endsWith('.webp')
-              ? 'image/webp'
-              : 'image/jpeg';
+          ? 'image/webp'
+          : 'image/jpeg';
       final dataUrl = 'data:$mimeType;base64,${base64Encode(bytes)}';
 
       if (dataUrl.length > 88_000) {
@@ -282,20 +382,24 @@ Future<void> _showEditProfileDialog(
                                       onPressed: pickingPhoto
                                           ? null
                                           : () => pickPhoto(
-                                                ImageSource.gallery,
-                                                setDialogState,
-                                              ),
-                                      icon: const Icon(Icons.photo_library_outlined),
+                                              ImageSource.gallery,
+                                              setDialogState,
+                                            ),
+                                      icon: const Icon(
+                                        Icons.photo_library_outlined,
+                                      ),
                                       label: const Text('Galería'),
                                     ),
                                     FilledButton.tonalIcon(
                                       onPressed: pickingPhoto
                                           ? null
                                           : () => pickPhoto(
-                                                ImageSource.camera,
-                                                setDialogState,
-                                              ),
-                                      icon: const Icon(Icons.photo_camera_outlined),
+                                              ImageSource.camera,
+                                              setDialogState,
+                                            ),
+                                      icon: const Icon(
+                                        Icons.photo_camera_outlined,
+                                      ),
                                       label: const Text('Cámara'),
                                     ),
                                   ],
@@ -317,8 +421,8 @@ Future<void> _showEditProfileDialog(
                           ),
                           validator: (value) =>
                               value == null || value.trim().isEmpty
-                                  ? 'Escribe tu nombre'
-                                  : null,
+                              ? 'Escribe tu nombre'
+                              : null,
                         ),
                         const SizedBox(height: 10),
                         TextFormField(
@@ -361,6 +465,125 @@ Future<void> _showEditProfileDialog(
                             prefixIcon: Icon(Icons.map_outlined),
                           ),
                         ),
+                        const SizedBox(height: 12),
+                        Card(
+                          child: Padding(
+                            padding: const EdgeInsets.all(12),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Row(
+                                  children: [
+                                    Icon(Icons.alternate_email_outlined),
+                                    SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        'Redes sociales',
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.w900,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 10),
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child:
+                                          DropdownButtonFormField<
+                                            _ProfileNetwork
+                                          >(
+                                            key: ValueKey(networkToAdd),
+                                            initialValue: networkToAdd,
+                                            isExpanded: true,
+                                            decoration: const InputDecoration(
+                                              labelText: 'Seleccionar red',
+                                            ),
+                                            items: _ProfileNetwork.values
+                                                .where(
+                                                  (network) => !selectedNetworks
+                                                      .contains(network),
+                                                )
+                                                .map(
+                                                  (network) => DropdownMenuItem(
+                                                    value: network,
+                                                    child: Text(
+                                                      network.label,
+                                                      maxLines: 1,
+                                                      overflow:
+                                                          TextOverflow.ellipsis,
+                                                    ),
+                                                  ),
+                                                )
+                                                .toList(),
+                                            onChanged:
+                                                selectedNetworks.length ==
+                                                    _ProfileNetwork
+                                                        .values
+                                                        .length
+                                                ? null
+                                                : (value) => setDialogState(
+                                                    () => networkToAdd = value,
+                                                  ),
+                                          ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    IconButton.filledTonal(
+                                      tooltip: 'Agregar red social',
+                                      onPressed: networkToAdd == null
+                                          ? null
+                                          : () {
+                                              setDialogState(() {
+                                                selectedNetworks.add(
+                                                  networkToAdd!,
+                                                );
+                                                networkToAdd =
+                                                    _firstAvailableNetwork(
+                                                      selectedNetworks,
+                                                    );
+                                              });
+                                            },
+                                      icon: const Icon(Icons.add),
+                                    ),
+                                  ],
+                                ),
+                                for (final network in _ProfileNetwork.values)
+                                  if (selectedNetworks.contains(network)) ...[
+                                    const SizedBox(height: 10),
+                                    TextFormField(
+                                      controller: socialControllers[network],
+                                      keyboardType:
+                                          network == _ProfileNetwork.whatsapp
+                                          ? TextInputType.phone
+                                          : TextInputType.url,
+                                      decoration: InputDecoration(
+                                        labelText: network.label,
+                                        hintText: network.hint,
+                                        prefixIcon: Icon(network.icon),
+                                        suffixIcon: IconButton(
+                                          tooltip: 'Quitar ${network.label}',
+                                          onPressed: () {
+                                            setDialogState(() {
+                                              socialControllers[network]!
+                                                  .clear();
+                                              selectedNetworks.remove(network);
+                                              networkToAdd ??= network;
+                                            });
+                                          },
+                                          icon: const Icon(Icons.close),
+                                        ),
+                                      ),
+                                      validator: (value) =>
+                                          _validateSocialValue(network, value),
+                                    ),
+                                  ],
+                              ],
+                            ),
+                          ),
+                        ),
                         if (message != null) ...[
                           const SizedBox(height: 12),
                           Text(
@@ -396,6 +619,30 @@ Future<void> _showEditProfileDialog(
                               profession: profession.text,
                               phone: phone.text,
                               profilePhoto: selectedPhoto,
+                              whatsapp: _normalizeSocialValue(
+                                _ProfileNetwork.whatsapp,
+                                whatsapp.text,
+                              ),
+                              instagramUrl: _normalizeSocialValue(
+                                _ProfileNetwork.instagram,
+                                instagram.text,
+                              ),
+                              facebookUrl: _normalizeSocialValue(
+                                _ProfileNetwork.facebook,
+                                facebook.text,
+                              ),
+                              tiktokUrl: _normalizeSocialValue(
+                                _ProfileNetwork.tiktok,
+                                tiktok.text,
+                              ),
+                              xUrl: _normalizeSocialValue(
+                                _ProfileNetwork.x,
+                                x.text,
+                              ),
+                              websiteUrl: _normalizeSocialValue(
+                                _ProfileNetwork.website,
+                                website.text,
+                              ),
                             );
                             OzirafSessionStore.profileNotifier.value = updated;
                             if (dialogContext.mounted) {
@@ -404,9 +651,10 @@ Future<void> _showEditProfileDialog(
                           } catch (e) {
                             setDialogState(() {
                               saving = false;
-                              message = e
-                                  .toString()
-                                  .replaceFirst('Exception: ', '');
+                              message = e.toString().replaceFirst(
+                                'Exception: ',
+                                '',
+                              );
                             });
                           }
                         },
@@ -426,7 +674,20 @@ Future<void> _showEditProfileDialog(
     state.dispose();
     profession.dispose();
     phone.dispose();
+    whatsapp.dispose();
+    instagram.dispose();
+    facebook.dispose();
+    tiktok.dispose();
+    x.dispose();
+    website.dispose();
   }
+}
+
+Future<void> showOzirafEditProfileDialog(
+  BuildContext context,
+  OzirafProfile profile,
+) {
+  return _showEditProfileDialog(context, profile);
 }
 
 class _ProfileApi {
@@ -438,6 +699,12 @@ class _ProfileApi {
     required String profession,
     required String phone,
     required String profilePhoto,
+    required String whatsapp,
+    required String instagramUrl,
+    required String facebookUrl,
+    required String tiktokUrl,
+    required String xUrl,
+    required String websiteUrl,
   }) async {
     final token = OzirafSessionStore.tokenNotifier.value;
     if (token == null || token.isEmpty) {
@@ -451,6 +718,12 @@ class _ProfileApi {
       'state': state.trim(),
       'profession': profession.trim(),
       'phone': phone.trim(),
+      'whatsapp': whatsapp.trim(),
+      'instagramUrl': instagramUrl.trim(),
+      'facebookUrl': facebookUrl.trim(),
+      'tiktokUrl': tiktokUrl.trim(),
+      'xUrl': xUrl.trim(),
+      'websiteUrl': websiteUrl.trim(),
     };
 
     final photo = profilePhoto.trim();

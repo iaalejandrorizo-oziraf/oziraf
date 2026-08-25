@@ -60,7 +60,8 @@ class _SearchScreenState extends State<SearchScreen> {
     final q = searchController.text.trim().toLowerCase();
     final city = cityController.text.trim().toLowerCase();
     return posts.where((post) {
-      final value = '${post.title} ${post.description} ${post.category}'.toLowerCase();
+      final value = '${post.title} ${post.description} ${post.category}'
+          .toLowerCase();
       return (q.isEmpty || value.contains(q)) &&
           (city.isEmpty || post.city.toLowerCase().contains(city));
     }).toList();
@@ -75,9 +76,8 @@ class _SearchScreenState extends State<SearchScreen> {
         children: [
           Text(
             'Encuentra lo que necesitas cerca de ti',
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.w900,
-                ),
+            style: Theme.of(context).textTheme.headlineSmall
+                ?.copyWith(fontWeight: FontWeight.w900),
           ),
           const SizedBox(height: 14),
           TextField(
@@ -122,9 +122,10 @@ class _SearchScreenState extends State<SearchScreen> {
 }
 
 class MyPostsScreen extends StatefulWidget {
-  const MyPostsScreen({super.key, required this.token});
+  const MyPostsScreen({super.key, required this.token, this.onEdit});
 
   final String token;
+  final Future<bool> Function(legacy.ServicePost post)? onEdit;
 
   @override
   State<MyPostsScreen> createState() => _MyPostsScreenState();
@@ -162,6 +163,13 @@ class _MyPostsScreenState extends State<MyPostsScreen> {
     }
   }
 
+  Future<void> edit(legacy.ServicePost post) async {
+    final onEdit = widget.onEdit;
+    if (onEdit == null) return;
+    final changed = await onEdit(post);
+    if (changed && mounted) await load();
+  }
+
   @override
   Widget build(BuildContext context) {
     return RefreshIndicator(
@@ -171,9 +179,8 @@ class _MyPostsScreenState extends State<MyPostsScreen> {
         children: [
           Text(
             'Mis publicaciones',
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.w900,
-                ),
+            style: Theme.of(context).textTheme.headlineSmall
+                ?.copyWith(fontWeight: FontWeight.w900),
           ),
           const SizedBox(height: 6),
           const Text(
@@ -195,7 +202,13 @@ class _MyPostsScreenState extends State<MyPostsScreen> {
               message: 'Cuando publiques un servicio aparecerá aquí.',
             )
           else
-            ...posts.map((post) => ServiceCard(post: post, owned: true)),
+            ...posts.map(
+              (post) => ServiceCard(
+                post: post,
+                owned: true,
+                onEdit: widget.onEdit == null ? null : () => edit(post),
+              ),
+            ),
         ],
       ),
     );
@@ -203,10 +216,16 @@ class _MyPostsScreenState extends State<MyPostsScreen> {
 }
 
 class ServiceCard extends StatelessWidget {
-  const ServiceCard({super.key, required this.post, this.owned = false});
+  const ServiceCard({
+    super.key,
+    required this.post,
+    this.owned = false,
+    this.onEdit,
+  });
 
   final legacy.ServicePost post;
   final bool owned;
+  final VoidCallback? onEdit;
 
   @override
   Widget build(BuildContext context) {
@@ -280,6 +299,7 @@ class ServiceCard extends StatelessWidget {
                   context,
                   url: videos.first.url,
                   title: post.title,
+                  postId: post.id,
                   providerName: post.providerName,
                   description: post.description,
                 ),
@@ -304,6 +324,17 @@ class ServiceCard extends StatelessWidget {
                 ),
               ],
             ),
+            if (owned && onEdit != null) ...[
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: onEdit,
+                  icon: const Icon(Icons.edit_outlined),
+                  label: const Text('Editar publicación'),
+                ),
+              ),
+            ],
           ],
         ),
       ),
@@ -422,7 +453,9 @@ class _PostImageCarouselState extends State<_PostImageCarousel> {
                         height: 7,
                         margin: const EdgeInsets.symmetric(horizontal: 3),
                         decoration: BoxDecoration(
-                          color: dotIndex == index ? Colors.white : Colors.white70,
+                          color: dotIndex == index
+                              ? Colors.white
+                              : Colors.white70,
                           borderRadius: BorderRadius.circular(99),
                           boxShadow: const [
                             BoxShadow(color: Colors.black26, blurRadius: 3),
