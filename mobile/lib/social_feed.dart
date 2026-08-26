@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:ui' show ImageFilter;
 
@@ -446,7 +447,7 @@ class _SearchBox extends StatelessWidget {
   }
 }
 
-class _CategoryStrip extends StatelessWidget {
+class _CategoryStrip extends StatefulWidget {
   const _CategoryStrip({
     required this.categories,
     required this.selectedCategory,
@@ -458,51 +459,199 @@ class _CategoryStrip extends StatelessWidget {
   final ValueChanged<String> onSelected;
 
   @override
+  State<_CategoryStrip> createState() => _CategoryStripState();
+}
+
+class _CategoryStripState extends State<_CategoryStrip> {
+  final controller = ScrollController();
+  Timer? hoverTimer;
+  bool canGoBack = false;
+  bool canGoForward = true;
+
+  @override
+  void initState() {
+    super.initState();
+    controller.addListener(_updateControls);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _updateControls());
+  }
+
+  @override
+  void didUpdateWidget(covariant _CategoryStrip oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _updateControls());
+  }
+
+  @override
+  void dispose() {
+    hoverTimer?.cancel();
+    controller
+      ..removeListener(_updateControls)
+      ..dispose();
+    super.dispose();
+  }
+
+  void _updateControls() {
+    if (!mounted || !controller.hasClients) return;
+    final position = controller.position;
+    final nextBack = position.pixels > position.minScrollExtent + 1;
+    final nextForward = position.pixels < position.maxScrollExtent - 1;
+    if (nextBack == canGoBack && nextForward == canGoForward) return;
+    setState(() {
+      canGoBack = nextBack;
+      canGoForward = nextForward;
+    });
+  }
+
+  Future<void> _moveBy(double distance) async {
+    _stopHoverMove();
+    if (!controller.hasClients) return;
+    final position = controller.position;
+    final target = (position.pixels + distance).clamp(
+      position.minScrollExtent,
+      position.maxScrollExtent,
+    );
+    await controller.animateTo(
+      target.toDouble(),
+      duration: const Duration(milliseconds: 360),
+      curve: Curves.easeOutCubic,
+    );
+  }
+
+  void _startHoverMove(int direction) {
+    hoverTimer?.cancel();
+    hoverTimer = Timer.periodic(const Duration(milliseconds: 35), (_) {
+      if (!controller.hasClients) return;
+      final position = controller.position;
+      final target = (position.pixels + direction * 1.6).clamp(
+        position.minScrollExtent,
+        position.maxScrollExtent,
+      );
+      if ((target - position.pixels).abs() < .1) {
+        _stopHoverMove();
+        return;
+      }
+      controller.jumpTo(target.toDouble());
+    });
+  }
+
+  void _stopHoverMove() {
+    hoverTimer?.cancel();
+    hoverTimer = null;
+  }
+
+  @override
   Widget build(BuildContext context) {
     return SizedBox(
       height: 40,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        itemCount: categories.length,
-        separatorBuilder: (_, _) => const SizedBox(width: 7),
-        itemBuilder: (context, index) {
-          final category = categories[index];
-          final selected = category == selectedCategory;
+      child: Row(
+        children: [
+          _CategoryArrow(
+            tooltip: 'Categorías anteriores',
+            icon: Icons.chevron_left_rounded,
+            enabled: canGoBack,
+            onPressed: () => _moveBy(-240),
+            onHoverStart: () => _startHoverMove(-1),
+            onHoverEnd: _stopHoverMove,
+          ),
+          const SizedBox(width: 6),
+          Expanded(
+            child: ListView.separated(
+              controller: controller,
+              primary: false,
+              scrollDirection: Axis.horizontal,
+              itemCount: widget.categories.length,
+              separatorBuilder: (_, _) => const SizedBox(width: 7),
+              itemBuilder: (context, index) {
+                final category = widget.categories[index];
+                final selected = category == widget.selectedCategory;
 
-          return InkWell(
-            borderRadius: BorderRadius.circular(21),
-            onTap: () => onSelected(category),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 160),
-              padding: const EdgeInsets.symmetric(horizontal: 13),
-              decoration: BoxDecoration(
-                color: selected ? _purpleSoft : Colors.white,
-                borderRadius: BorderRadius.circular(21),
-                border: Border.all(
-                  color: selected ? const Color(0xFFD8CCFF) : _border,
-                ),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    _categoryIcon(category),
-                    size: 16,
-                    color: selected ? _purple : const Color(0xFF626673),
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    category,
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      color: selected ? _purple : const Color(0xFF3B3E49),
+                return InkWell(
+                  borderRadius: BorderRadius.circular(21),
+                  onTap: () => widget.onSelected(category),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 160),
+                    padding: const EdgeInsets.symmetric(horizontal: 13),
+                    decoration: BoxDecoration(
+                      color: selected ? _purpleSoft : Colors.white,
+                      borderRadius: BorderRadius.circular(21),
+                      border: Border.all(
+                        color: selected ? const Color(0xFFD8CCFF) : _border,
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          _categoryIcon(category),
+                          size: 16,
+                          color: selected ? _purple : const Color(0xFF626673),
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          category,
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: selected ? _purple : const Color(0xFF3B3E49),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                ],
-              ),
+                );
+              },
             ),
-          );
-        },
+          ),
+          const SizedBox(width: 6),
+          _CategoryArrow(
+            tooltip: 'Más categorías',
+            icon: Icons.chevron_right_rounded,
+            enabled: canGoForward,
+            onPressed: () => _moveBy(240),
+            onHoverStart: () => _startHoverMove(1),
+            onHoverEnd: _stopHoverMove,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CategoryArrow extends StatelessWidget {
+  const _CategoryArrow({
+    required this.tooltip,
+    required this.icon,
+    required this.enabled,
+    required this.onPressed,
+    required this.onHoverStart,
+    required this.onHoverEnd,
+  });
+
+  final String tooltip;
+  final IconData icon;
+  final bool enabled;
+  final VoidCallback onPressed;
+  final VoidCallback onHoverStart;
+  final VoidCallback onHoverEnd;
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      cursor: enabled ? SystemMouseCursors.click : SystemMouseCursors.basic,
+      onEnter: enabled ? (_) => onHoverStart() : null,
+      onExit: (_) => onHoverEnd(),
+      child: IconButton(
+        tooltip: tooltip,
+        onPressed: enabled ? onPressed : null,
+        constraints: const BoxConstraints.tightFor(width: 36, height: 36),
+        padding: EdgeInsets.zero,
+        style: IconButton.styleFrom(
+          foregroundColor: _purple,
+          disabledForegroundColor: const Color(0xFFB8BBC5),
+          backgroundColor: Colors.white,
+          disabledBackgroundColor: const Color(0xFFF4F4F8),
+          side: BorderSide(color: enabled ? const Color(0xFFDCD4FF) : _border),
+        ),
+        icon: Icon(icon, size: 22),
       ),
     );
   }
