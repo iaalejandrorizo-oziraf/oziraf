@@ -44,6 +44,7 @@ jobs:
       TMP: D:\OZIRAF\tools\tmp
       OZIRAF_REMOTE_API_URL: http://100.112.136.50:3001
       OZIRAF_WEB_LOCAL_API_URL: http://127.0.0.1:3001
+      OZIRAF_PUBLIC_WEB_URL: http://100.112.136.50:8092
       OZIRAF_WEB_PUBLISH_PATH: D:\OZIRAF\mobile\build\web
       OZIRAF_DEBUG_APK_PUBLISH_PATH: D:\OZIRAF\mobile\build\web\downloads\oziraf-debug.apk
       OZIRAF_ARM64_APK_PUBLISH_PATH: D:\OZIRAF\mobile\build\web\downloads\oziraf-release-arm64.apk
@@ -100,7 +101,8 @@ jobs:
         run: |
           flutter build apk --debug `
             "--dart-define=OZIRAF_API_URL=$env:OZIRAF_REMOTE_API_URL" `
-            "--dart-define=OZIRAF_ANDROID_API_URL=$env:OZIRAF_REMOTE_API_URL"
+            "--dart-define=OZIRAF_ANDROID_API_URL=$env:OZIRAF_REMOTE_API_URL" `
+            "--dart-define=OZIRAF_PUBLIC_WEB_URL=$env:OZIRAF_PUBLIC_WEB_URL"
 
       - name: Mobile build split release APKs
         if: env.TASK == 'mobile-build-apk' || env.TASK == 'mobile-auto-deploy'
@@ -108,14 +110,16 @@ jobs:
         run: |
           flutter build apk --release --split-per-abi `
             "--dart-define=OZIRAF_API_URL=$env:OZIRAF_REMOTE_API_URL" `
-            "--dart-define=OZIRAF_ANDROID_API_URL=$env:OZIRAF_REMOTE_API_URL"
+            "--dart-define=OZIRAF_ANDROID_API_URL=$env:OZIRAF_REMOTE_API_URL" `
+            "--dart-define=OZIRAF_PUBLIC_WEB_URL=$env:OZIRAF_PUBLIC_WEB_URL"
 
       - name: Mobile build web
         if: env.TASK == 'mobile-build-web' || env.TASK == 'mobile-auto-deploy'
         working-directory: mobile
         run: |
           flutter build web --debug `
-            "--dart-define=OZIRAF_API_URL=$env:OZIRAF_WEB_LOCAL_API_URL"
+            "--dart-define=OZIRAF_API_URL=$env:OZIRAF_WEB_LOCAL_API_URL" `
+            "--dart-define=OZIRAF_PUBLIC_WEB_URL=$env:OZIRAF_PUBLIC_WEB_URL"
 
       - name: Publish web to OZIRAF local server
         if: env.TASK == 'mobile-build-web' || env.TASK == 'mobile-auto-deploy'

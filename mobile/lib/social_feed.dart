@@ -7,6 +7,7 @@ import 'app_v2.dart' as core;
 import 'auth_session.dart';
 import 'oziraf_share.dart';
 import 'post_video_dialog.dart';
+import 'provider_profile.dart';
 import 'social_api.dart';
 
 const _purple = Color(0xFF654CFF);
@@ -36,12 +37,14 @@ class SocialActionsStore {
 class SocialFeedScreen extends StatefulWidget {
   const SocialFeedScreen({
     super.key,
+    this.initialPostId,
     this.onPublish,
     this.onOpenSaved,
     this.onRequireAccount,
     this.onOpenMessages,
   });
 
+  final String? initialPostId;
   final VoidCallback? onPublish;
   final VoidCallback? onOpenSaved;
   final VoidCallback? onRequireAccount;
@@ -60,6 +63,7 @@ class _SocialFeedScreenState extends State<SocialFeedScreen> {
   String selectedCategory = 'Todos';
   int topTab = 0;
   _FeedFilter activeFilter = _FeedFilter.all;
+  bool sharedPostHandled = false;
 
   @override
   void initState() {
@@ -88,6 +92,7 @@ class _SocialFeedScreenState extends State<SocialFeedScreen> {
         posts = result;
         loading = false;
       });
+      await _openSharedPost(result);
     } catch (e) {
       if (!mounted) return;
 
@@ -97,6 +102,39 @@ class _SocialFeedScreenState extends State<SocialFeedScreen> {
         error = e.toString().replaceFirst('Exception: ', '');
       });
     }
+  }
+
+  Future<void> _openSharedPost(List<core.ServicePost> loadedPosts) async {
+    final postId = widget.initialPostId?.trim() ?? '';
+    if (sharedPostHandled || postId.isEmpty) return;
+    sharedPostHandled = true;
+
+    core.ServicePost? post;
+    for (final candidate in loadedPosts) {
+      if (candidate.id == postId) {
+        post = candidate;
+        break;
+      }
+    }
+
+    try {
+      post ??= await core.OzirafApiClient.fetchPost(postId);
+    } catch (_) {
+      if (mounted) {
+        _toast(context, 'Este anuncio ya no está disponible');
+      }
+      return;
+    }
+    if (!mounted) return;
+
+    await WidgetsBinding.instance.endOfFrame;
+    if (!mounted) return;
+    await showOzirafPostDetail(
+      context,
+      post,
+      onRequireAccount: widget.onRequireAccount,
+      onOpenMessages: widget.onOpenMessages,
+    );
   }
 
   List<String> get categories {
@@ -510,6 +548,7 @@ class SocialServiceCard extends StatelessWidget {
             child: _ProviderHeader(
               post: post,
               onRequireAccount: onRequireAccount,
+              onOpenMessages: onOpenMessages,
             ),
           ),
           if (images.isNotEmpty)
@@ -785,82 +824,111 @@ class _ReviewStars extends StatelessWidget {
 }
 
 class _ProviderHeader extends StatelessWidget {
-  const _ProviderHeader({required this.post, this.onRequireAccount});
+  const _ProviderHeader({
+    required this.post,
+    this.onRequireAccount,
+    this.onOpenMessages,
+  });
 
   final core.ServicePost post;
   final VoidCallback? onRequireAccount;
+  final VoidCallback? onOpenMessages;
 
   @override
   Widget build(BuildContext context) {
     return Row(
       children: [
-        _SocialAvatar(
-          photo: post.providerPhoto,
-          name: post.providerName,
-          size: 47,
-        ),
-        const SizedBox(width: 10),
         Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Flexible(
-                    child: Text(
-                      post.providerName,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: -.15,
-                        color: _text,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 4),
-                  const Icon(
-                    Icons.verified_rounded,
-                    size: 16,
-                    color: Color(0xFF4285F4),
-                  ),
-                ],
+          child: InkWell(
+            borderRadius: BorderRadius.circular(10),
+            onTap: () => showOzirafProviderProfile(
+              context,
+              post,
+              onContact: () => _openContactSheet(
+                context,
+                post,
+                onRequireAccount: onRequireAccount,
+                onOpenMessages: onOpenMessages,
               ),
-              const SizedBox(height: 1),
-              Text(
-                post.category,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                  color: _muted,
-                ),
-              ),
-              const SizedBox(height: 1),
-              Row(
+            ),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 2),
+              child: Row(
                 children: [
-                  const Icon(
-                    Icons.location_on_outlined,
-                    size: 13,
-                    color: Color(0xFF858996),
+                  _SocialAvatar(
+                    photo: post.providerPhoto,
+                    name: post.providerName,
+                    size: 47,
                   ),
-                  const SizedBox(width: 2),
+                  const SizedBox(width: 10),
                   Expanded(
-                    child: Text(
-                      '${post.city}, ${post.state}',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 11,
-                        color: Color(0xFF858996),
-                      ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Flexible(
+                              child: Text(
+                                post.providerName,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: -.15,
+                                  color: _text,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            const Icon(
+                              Icons.verified_rounded,
+                              size: 16,
+                              color: Color(0xFF4285F4),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 1),
+                        Text(
+                          post.providerProfession.trim().isEmpty
+                              ? post.category
+                              : post.providerProfession,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: _muted,
+                          ),
+                        ),
+                        const SizedBox(height: 1),
+                        Row(
+                          children: [
+                            const Icon(
+                              Icons.location_on_outlined,
+                              size: 13,
+                              color: Color(0xFF858996),
+                            ),
+                            const SizedBox(width: 2),
+                            Expanded(
+                              child: Text(
+                                '${post.city}, ${post.state}',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  color: Color(0xFF858996),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
                   ),
                 ],
               ),
-            ],
+            ),
           ),
         ),
         IconButton(
@@ -1587,7 +1655,8 @@ class _DesktopAside extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
+    return ListView(
+      padding: const EdgeInsets.only(bottom: 24),
       children: [
         _AsideCard(
           icon: Icons.rocket_launch_outlined,
@@ -1942,7 +2011,11 @@ Future<void> _openPostOptions(
                 subtitle: Text(post.title),
                 onTap: () {
                   Navigator.pop(sheetContext);
-                  _openDetailsSheet(context, post);
+                  showOzirafPostDetail(
+                    context,
+                    post,
+                    onRequireAccount: onRequireAccount,
+                  );
                 },
               ),
               ListTile(
@@ -1987,48 +2060,88 @@ Future<void> _openPostOptions(
   );
 }
 
-Future<void> _openDetailsSheet(
+Future<void> showOzirafPostDetail(
   BuildContext context,
-  core.ServicePost post,
-) async {
+  core.ServicePost post, {
+  VoidCallback? onRequireAccount,
+  VoidCallback? onOpenMessages,
+}) async {
+  final viewport = MediaQuery.sizeOf(context);
+  final desktop = viewport.width >= 760;
+
+  Widget content(BuildContext dialogContext) => Material(
+    color: _background,
+    borderRadius: BorderRadius.circular(desktop ? 12 : 0),
+    clipBehavior: Clip.antiAlias,
+    child: Column(
+      children: [
+        Container(
+          height: 54,
+          padding: const EdgeInsets.only(left: 16, right: 6),
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            border: Border(bottom: BorderSide(color: _border)),
+          ),
+          child: Row(
+            children: [
+              const Icon(Icons.storefront_outlined, color: _purple, size: 21),
+              const SizedBox(width: 8),
+              const Expanded(
+                child: Text(
+                  'Anuncio OZIRAF',
+                  style: TextStyle(
+                    color: _text,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+              IconButton(
+                tooltip: 'Cerrar',
+                onPressed: () => Navigator.pop(dialogContext),
+                icon: const Icon(Icons.close_rounded, color: _muted),
+              ),
+            ],
+          ),
+        ),
+        Expanded(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(10),
+            child: SocialServiceCard(
+              post: post,
+              onRequireAccount: onRequireAccount,
+              onOpenMessages: onOpenMessages,
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
+
+  if (desktop) {
+    await showDialog<void>(
+      context: context,
+      barrierColor: Colors.black.withValues(alpha: .48),
+      builder: (dialogContext) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
+        child: SizedBox(
+          width: 720,
+          height: viewport.height.clamp(560, 860).toDouble(),
+          child: content(dialogContext),
+        ),
+      ),
+    );
+    return;
+  }
+
   await showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
-    showDragHandle: true,
-    builder: (context) => SafeArea(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(18, 4, 18, 22),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              post.title,
-              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              '${post.providerName} · ${post.category}',
-              style: const TextStyle(color: _muted),
-            ),
-            const SizedBox(height: 14),
-            Text(post.description, style: const TextStyle(height: 1.45)),
-            const SizedBox(height: 14),
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: const Icon(Icons.location_on_outlined),
-              title: Text('${post.city}, ${post.state}'),
-              trailing: Text(
-                post.price,
-                style: const TextStyle(
-                  color: _purpleDark,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    ),
+    useSafeArea: true,
+    backgroundColor: Colors.transparent,
+    builder: (sheetContext) =>
+        SizedBox(height: viewport.height * .94, child: content(sheetContext)),
   );
 }
 

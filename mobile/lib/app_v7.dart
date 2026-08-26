@@ -8,6 +8,7 @@ import 'app_v3.dart' as account;
 import 'app_v4.dart' as profile_editor;
 import 'app_v5.dart' as publish;
 import 'auth_session.dart';
+import 'oziraf_share.dart';
 import 'shorts_feed.dart';
 import 'social_api.dart';
 import 'social_feed.dart';
@@ -21,6 +22,7 @@ class OzirafApp extends StatefulWidget {
 
 class _OzirafAppState extends State<OzirafApp> {
   final sessionStore = OzirafSessionStore();
+  final String? initialPostId = resolveOzirafSharedPostId();
   String? token;
   OzirafProfile? profile;
   bool restoring = true;
@@ -153,6 +155,7 @@ class _OzirafAppState extends State<OzirafApp> {
               onLogin: onLogin,
               onLogout: logout,
               onAccountTypeChanged: changeAccountType,
+              initialPostId: initialPostId,
             ),
     );
   }
@@ -214,6 +217,7 @@ class _SocialShell extends StatefulWidget {
     required this.onLogin,
     required this.onLogout,
     required this.onAccountTypeChanged,
+    this.initialPostId,
   });
 
   final String? token;
@@ -221,6 +225,7 @@ class _SocialShell extends StatefulWidget {
   final Future<void> Function(String token) onLogin;
   final Future<void> Function() onLogout;
   final Future<void> Function(OzirafAccountType type) onAccountTypeChanged;
+  final String? initialPostId;
 
   @override
   State<_SocialShell> createState() => _SocialShellState();
@@ -354,6 +359,7 @@ class _SocialShellState extends State<_SocialShell> {
   Widget _body() {
     if (index == 0) {
       return SocialFeedScreen(
+        initialPostId: widget.initialPostId,
         onPublish: () => setState(() => index = 2),
         onOpenSaved: () => setState(() => index = 5),
         onRequireAccount: requireAccount,

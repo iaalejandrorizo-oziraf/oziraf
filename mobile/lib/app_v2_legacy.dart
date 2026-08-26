@@ -1276,6 +1276,15 @@ class ServicePost {
     required this.providerName,
     required this.providerPhoto,
     required this.media,
+    this.providerId = '',
+    this.providerProfession = '',
+    this.providerPhone = '',
+    this.providerWhatsapp = '',
+    this.providerInstagramUrl = '',
+    this.providerFacebookUrl = '',
+    this.providerTiktokUrl = '',
+    this.providerXUrl = '',
+    this.providerWebsiteUrl = '',
     this.averageRating,
     this.reviewCount = 0,
     this.latestReview,
@@ -1290,6 +1299,15 @@ class ServicePost {
   final String price;
   final String providerName;
   final String providerPhoto;
+  final String providerId;
+  final String providerProfession;
+  final String providerPhone;
+  final String providerWhatsapp;
+  final String providerInstagramUrl;
+  final String providerFacebookUrl;
+  final String providerTiktokUrl;
+  final String providerXUrl;
+  final String providerWebsiteUrl;
   final List<PostMediaItem> media;
   final double? averageRating;
   final int reviewCount;
@@ -1306,6 +1324,15 @@ class ServicePost {
       price: price,
       providerName: providerName,
       providerPhoto: providerPhoto,
+      providerId: providerId,
+      providerProfession: providerProfession,
+      providerPhone: providerPhone,
+      providerWhatsapp: providerWhatsapp,
+      providerInstagramUrl: providerInstagramUrl,
+      providerFacebookUrl: providerFacebookUrl,
+      providerTiktokUrl: providerTiktokUrl,
+      providerXUrl: providerXUrl,
+      providerWebsiteUrl: providerWebsiteUrl,
       media: media,
       averageRating: averageRating,
       reviewCount: reviewCount,
@@ -1341,6 +1368,15 @@ class ServicePost {
       price: formatPrice(json['price']),
       providerName: provider.isEmpty ? 'Anunciante OZIRAF' : provider,
       providerPhoto: text(user['profilePhoto']),
+      providerId: text(user['id']),
+      providerProfession: text(user['profession']),
+      providerPhone: text(user['phone']),
+      providerWhatsapp: text(user['whatsapp']),
+      providerInstagramUrl: text(user['instagramUrl']),
+      providerFacebookUrl: text(user['facebookUrl']),
+      providerTiktokUrl: text(user['tiktokUrl']),
+      providerXUrl: text(user['xUrl']),
+      providerWebsiteUrl: text(user['websiteUrl']),
       media: media,
       averageRating: averageValue is num ? averageValue.toDouble() : null,
       reviewCount: countValue is num ? countValue.toInt() : 0,
@@ -1405,6 +1441,21 @@ class OzirafApiClient {
     final payload = decodePayload(response.body);
     ensureSuccess(response.statusCode, payload);
     return _hydrateLatestReviews(postsFromPayload(payload));
+  }
+
+  static Future<ServicePost> fetchPost(String postId) async {
+    final response = await http
+        .get(Uri.parse('$baseUrl/posts/${Uri.encodeComponent(postId)}'))
+        .timeout(const Duration(seconds: 10));
+    final payload = decodePayload(response.body);
+    ensureSuccess(response.statusCode, payload);
+    if (payload is! Map<String, dynamic>) {
+      throw Exception('No se pudo cargar el anuncio compartido.');
+    }
+    final hydrated = await _hydrateLatestReviews([
+      ServicePost.fromJson(payload),
+    ]);
+    return hydrated.single;
   }
 
   static Future<String> login({

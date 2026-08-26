@@ -5,6 +5,11 @@ import 'package:url_launcher/url_launcher.dart';
 
 enum _ShareTarget { whatsapp, instagram, facebook, tiktok, x, copy, more }
 
+const _publicWebUrl = String.fromEnvironment(
+  'OZIRAF_PUBLIC_WEB_URL',
+  defaultValue: 'http://100.112.136.50:8092',
+);
+
 Future<void> showOzirafShareSheet(
   BuildContext context, {
   required String title,
@@ -19,7 +24,7 @@ Future<void> showOzirafShareSheet(
     location: location,
     price: price,
   );
-  final link = _buildShareLink(postId);
+  final link = buildOzirafShareLink(postId);
 
   await showModalBottomSheet<void>(
     context: context,
@@ -139,15 +144,25 @@ String _buildShareText({
   ].where((item) => item.trim().isNotEmpty).join('\n');
 }
 
-Uri? _buildShareLink(String postId) {
+@visibleForTesting
+Uri? buildOzirafShareLink(String postId, {Uri? currentBase}) {
   if (postId.trim().isEmpty) return null;
-  final base = Uri.base;
+  final configured = Uri.tryParse(_publicWebUrl.trim());
+  final base =
+      configured != null && {'http', 'https'}.contains(configured.scheme)
+      ? configured
+      : currentBase ?? Uri.base;
   if (!{'http', 'https'}.contains(base.scheme)) return null;
   return base.replace(
     path: '/',
     queryParameters: {'post': postId.trim()},
     fragment: '',
   );
+}
+
+String? resolveOzirafSharedPostId([Uri? location]) {
+  final value = (location ?? Uri.base).queryParameters['post']?.trim() ?? '';
+  return value.isEmpty ? null : value;
 }
 
 Future<void> _shareTo(

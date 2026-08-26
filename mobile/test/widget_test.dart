@@ -4,6 +4,8 @@ import 'package:oziraf/app_v2.dart';
 import 'package:oziraf/app_v4.dart' as profile_editor;
 import 'package:oziraf/auth_session.dart';
 import 'package:oziraf/post_video_dialog.dart';
+import 'package:oziraf/provider_profile.dart';
+import 'package:oziraf/oziraf_share.dart';
 import 'package:oziraf/shorts_feed.dart';
 import 'package:oziraf/social_feed.dart';
 
@@ -184,6 +186,54 @@ void main() {
     expect(post.latestReview?.authorName, 'Cliente Uno');
     expect(post.latestReview?.rating, 5);
     expect(post.latestReview?.comment, 'Excelente servicio');
+  });
+
+  test('post reads the provider public profile and social links', () {
+    final post = ServicePost.fromJson({
+      'id': 'post-1',
+      'user': {
+        'id': 'user-1',
+        'firstName': 'Ana',
+        'lastName': 'López',
+        'profession': 'Arquitecta',
+        'phone': '+52 228 111 2233',
+        'whatsapp': '+52 228 111 2233',
+        'instagramUrl': 'https://instagram.com/ana',
+        'facebookUrl': 'https://facebook.com/ana',
+        'tiktokUrl': 'https://tiktok.com/@ana',
+        'xUrl': 'https://x.com/ana',
+        'websiteUrl': 'https://ana.example',
+      },
+    });
+
+    expect(post.providerId, 'user-1');
+    expect(post.providerProfession, 'Arquitecta');
+    expect(post.providerWhatsapp, '+52 228 111 2233');
+    expect(post.providerInstagramUrl, 'https://instagram.com/ana');
+    expect(post.providerTiktokUrl, 'https://tiktok.com/@ana');
+    expect(post.providerXUrl, 'https://x.com/ana');
+  });
+
+  test('shared post link keeps the exact publication identifier', () {
+    final link = buildOzirafShareLink('post-123');
+
+    expect(link, isNotNull);
+    expect(link!.queryParameters['post'], 'post-123');
+    expect(resolveOzirafSharedPostId(link), 'post-123');
+  });
+
+  test('social usernames become valid external links', () {
+    expect(
+      resolveOzirafSocialUri('@ana', OzirafSocialNetwork.instagram).toString(),
+      'https://instagram.com/ana',
+    );
+    expect(
+      resolveOzirafSocialUri(
+        '+52 228 111 2233',
+        OzirafSocialNetwork.whatsapp,
+      ).toString(),
+      'https://wa.me/522281112233',
+    );
   });
 
   testWidgets('service ad shows rating, opinion count and latest comment', (

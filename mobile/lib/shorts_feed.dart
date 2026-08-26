@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 
 import 'app_v2.dart' as core;
+import 'provider_profile.dart';
 import 'social_feed.dart';
 import 'video_source.dart';
 
@@ -491,7 +492,22 @@ class _ShortVideoPageState extends State<_ShortVideoPage> {
                                       children: [
                                         _ShortAvatar(
                                           name: post.providerName,
+                                          photo: post.providerPhoto,
                                           size: 36,
+                                          onTap: () =>
+                                              showOzirafProviderProfile(
+                                                context,
+                                                post,
+                                                onContact: () =>
+                                                    openOzirafContact(
+                                                      context,
+                                                      post,
+                                                      onRequireAccount: widget
+                                                          .onRequireAccount,
+                                                      onOpenMessages:
+                                                          widget.onOpenMessages,
+                                                    ),
+                                              ),
                                         ),
                                         const SizedBox(width: 9),
                                         Expanded(
@@ -502,16 +518,30 @@ class _ShortVideoPageState extends State<_ShortVideoPage> {
                                               Row(
                                                 children: [
                                                   Flexible(
-                                                    child: Text(
-                                                      post.providerName,
-                                                      maxLines: 1,
-                                                      overflow:
-                                                          TextOverflow.ellipsis,
-                                                      style: const TextStyle(
-                                                        color: Colors.white,
-                                                        fontSize: 13,
-                                                        fontWeight:
-                                                            FontWeight.w900,
+                                                    child: GestureDetector(
+                                                      onTap: () => showOzirafProviderProfile(
+                                                        context,
+                                                        post,
+                                                        onContact: () => openOzirafContact(
+                                                          context,
+                                                          post,
+                                                          onRequireAccount: widget
+                                                              .onRequireAccount,
+                                                          onOpenMessages: widget
+                                                              .onOpenMessages,
+                                                        ),
+                                                      ),
+                                                      child: Text(
+                                                        post.providerName,
+                                                        maxLines: 1,
+                                                        overflow: TextOverflow
+                                                            .ellipsis,
+                                                        style: const TextStyle(
+                                                          color: Colors.white,
+                                                          fontSize: 13,
+                                                          fontWeight:
+                                                              FontWeight.w900,
+                                                        ),
                                                       ),
                                                     ),
                                                   ),
@@ -831,7 +861,20 @@ class _ShortVideoPageState extends State<_ShortVideoPage> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                _ShortAvatar(name: post.providerName),
+                _ShortAvatar(
+                  name: post.providerName,
+                  photo: post.providerPhoto,
+                  onTap: () => showOzirafProviderProfile(
+                    context,
+                    post,
+                    onContact: () => openOzirafContact(
+                      context,
+                      post,
+                      onRequireAccount: widget.onRequireAccount,
+                      onOpenMessages: widget.onOpenMessages,
+                    ),
+                  ),
+                ),
                 const SizedBox(height: 16),
                 ValueListenableBuilder<Set<String>>(
                   valueListenable: SocialActionsStore.likedPostIds,
@@ -891,15 +934,29 @@ class _ShortVideoPageState extends State<_ShortVideoPage> {
                 Row(
                   children: [
                     Flexible(
-                      child: Text(
-                        post.providerName,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w900,
-                          shadows: [Shadow(color: Colors.black, blurRadius: 5)],
+                      child: GestureDetector(
+                        onTap: () => showOzirafProviderProfile(
+                          context,
+                          post,
+                          onContact: () => openOzirafContact(
+                            context,
+                            post,
+                            onRequireAccount: widget.onRequireAccount,
+                            onOpenMessages: widget.onOpenMessages,
+                          ),
+                        ),
+                        child: Text(
+                          post.providerName,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w900,
+                            shadows: [
+                              Shadow(color: Colors.black, blurRadius: 5),
+                            ],
+                          ),
                         ),
                       ),
                     ),
@@ -1250,34 +1307,45 @@ class _ShortAction extends StatelessWidget {
 }
 
 class _ShortAvatar extends StatelessWidget {
-  const _ShortAvatar({required this.name, this.size = 50});
+  const _ShortAvatar({
+    required this.name,
+    this.photo = '',
+    this.size = 50,
+    this.onTap,
+  });
 
   final String name;
+  final String photo;
   final double size;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     final initial = name.trim().isEmpty
         ? 'O'
         : name.trim().substring(0, 1).toUpperCase();
-    return Container(
-      width: size,
-      height: size,
-      padding: EdgeInsets.all(size * .05),
-      decoration: const BoxDecoration(
-        shape: BoxShape.circle,
-        gradient: LinearGradient(
-          colors: [Color(0xFF8A3FFC), Color(0xFFEF5DA8), Color(0xFFFFB648)],
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: size,
+        height: size,
+        padding: EdgeInsets.all(size * .05),
+        decoration: const BoxDecoration(
+          shape: BoxShape.circle,
+          gradient: LinearGradient(
+            colors: [Color(0xFF8A3FFC), Color(0xFFEF5DA8), Color(0xFFFFB648)],
+          ),
         ),
-      ),
-      child: CircleAvatar(
-        backgroundColor: const Color(0xFF24202F),
-        child: Text(
-          initial,
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: size * .34,
-            fontWeight: FontWeight.w900,
+        child: CircleAvatar(
+          backgroundColor: const Color(0xFF24202F),
+          foregroundImage: photo.trim().isEmpty ? null : NetworkImage(photo),
+          child: Text(
+            initial,
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: size * .34,
+              fontWeight: FontWeight.w900,
+            ),
           ),
         ),
       ),

@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 
 import 'app_v2.dart' as legacy;
 import 'auth_session.dart';
+import 'provider_profile.dart';
 
 class OzirafApp extends StatefulWidget {
   const OzirafApp({super.key});
@@ -594,37 +595,79 @@ class _AccountScreenState extends State<_AccountScreen> {
                       runSpacing: 8,
                       children: [
                         if (profile.whatsapp.isNotEmpty)
-                          const Chip(
-                            avatar: Icon(Icons.chat_outlined, size: 18),
-                            label: Text('WhatsApp'),
+                          ActionChip(
+                            avatar: const Icon(Icons.chat_outlined, size: 18),
+                            label: const Text('WhatsApp'),
+                            onPressed: () => openOzirafSocialLink(
+                              context,
+                              profile.whatsapp,
+                              OzirafSocialNetwork.whatsapp,
+                            ),
                           ),
                         if (profile.instagramUrl.isNotEmpty)
-                          const Chip(
-                            avatar: Icon(Icons.camera_alt_outlined, size: 18),
-                            label: Text('Instagram'),
+                          ActionChip(
+                            avatar: const Icon(
+                              Icons.camera_alt_outlined,
+                              size: 18,
+                            ),
+                            label: const Text('Instagram'),
+                            onPressed: () => openOzirafSocialLink(
+                              context,
+                              profile.instagramUrl,
+                              OzirafSocialNetwork.instagram,
+                            ),
                           ),
                         if (profile.facebookUrl.isNotEmpty)
-                          const Chip(
-                            avatar: Icon(Icons.facebook_outlined, size: 18),
-                            label: Text('Facebook'),
+                          ActionChip(
+                            avatar: const Icon(
+                              Icons.facebook_outlined,
+                              size: 18,
+                            ),
+                            label: const Text('Facebook'),
+                            onPressed: () => openOzirafSocialLink(
+                              context,
+                              profile.facebookUrl,
+                              OzirafSocialNetwork.facebook,
+                            ),
                           ),
                         if (profile.tiktokUrl.isNotEmpty)
-                          const Chip(
-                            avatar: Icon(Icons.music_note_outlined, size: 18),
-                            label: Text('TikTok'),
+                          ActionChip(
+                            avatar: const Icon(
+                              Icons.music_note_outlined,
+                              size: 18,
+                            ),
+                            label: const Text('TikTok'),
+                            onPressed: () => openOzirafSocialLink(
+                              context,
+                              profile.tiktokUrl,
+                              OzirafSocialNetwork.tiktok,
+                            ),
                           ),
                         if (profile.xUrl.isNotEmpty)
-                          const Chip(
-                            avatar: Icon(
+                          ActionChip(
+                            avatar: const Icon(
                               Icons.alternate_email_outlined,
                               size: 18,
                             ),
-                            label: Text('X'),
+                            label: const Text('X'),
+                            onPressed: () => openOzirafSocialLink(
+                              context,
+                              profile.xUrl,
+                              OzirafSocialNetwork.x,
+                            ),
                           ),
                         if (profile.websiteUrl.isNotEmpty)
-                          const Chip(
-                            avatar: Icon(Icons.language_outlined, size: 18),
-                            label: Text('Sitio web'),
+                          ActionChip(
+                            avatar: const Icon(
+                              Icons.language_outlined,
+                              size: 18,
+                            ),
+                            label: const Text('Sitio web'),
+                            onPressed: () => openOzirafSocialLink(
+                              context,
+                              profile.websiteUrl,
+                              OzirafSocialNetwork.website,
+                            ),
                           ),
                       ],
                     ),
