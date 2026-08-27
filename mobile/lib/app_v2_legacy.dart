@@ -1340,6 +1340,37 @@ class ServicePost {
     );
   }
 
+  ServicePost withSubmittedReview(ServiceReviewPreview review) {
+    final nextCount = reviewCount + 1;
+    final previousTotal = (averageRating ?? 0) * reviewCount;
+    final nextAverage = (previousTotal + review.rating) / nextCount;
+
+    return ServicePost(
+      id: id,
+      title: title,
+      description: description,
+      category: category,
+      city: city,
+      state: state,
+      price: price,
+      providerName: providerName,
+      providerPhoto: providerPhoto,
+      providerId: providerId,
+      providerProfession: providerProfession,
+      providerPhone: providerPhone,
+      providerWhatsapp: providerWhatsapp,
+      providerInstagramUrl: providerInstagramUrl,
+      providerFacebookUrl: providerFacebookUrl,
+      providerTiktokUrl: providerTiktokUrl,
+      providerXUrl: providerXUrl,
+      providerWebsiteUrl: providerWebsiteUrl,
+      media: media,
+      averageRating: nextAverage,
+      reviewCount: nextCount,
+      latestReview: review,
+    );
+  }
+
   factory ServicePost.fromJson(Map<String, dynamic> json) {
     final user = json['user'] is Map<String, dynamic>
         ? json['user'] as Map<String, dynamic>

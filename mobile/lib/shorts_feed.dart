@@ -757,7 +757,16 @@ class _ShortVideoPageState extends State<_ShortVideoPage> {
 
   @override
   Widget build(BuildContext context) {
-    final post = widget.item.post;
+    return ValueListenableBuilder<Map<String, core.ServicePost>>(
+      valueListenable: SocialActionsStore.updatedPosts,
+      builder: (context, updatedPosts, _) {
+        final original = widget.item.post;
+        return _buildPage(context, updatedPosts[original.id] ?? original);
+      },
+    );
+  }
+
+  Widget _buildPage(BuildContext context, core.ServicePost post) {
     final player = controller;
 
     if (kIsWeb && MediaQuery.sizeOf(context).width >= 760) {

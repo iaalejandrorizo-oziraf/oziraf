@@ -27,6 +27,26 @@ class SocialActionsStore {
   static final likedPostIds = ValueNotifier<Set<String>>(<String>{});
   static final savedPostIds = ValueNotifier<Set<String>>(<String>{});
   static final unreadLeadCount = ValueNotifier<int>(0);
+  static final updatedPosts = ValueNotifier<Map<String, core.ServicePost>>(
+    <String, core.ServicePost>{},
+  );
+
+  static core.ServicePost currentPost(core.ServicePost post) {
+    return updatedPosts.value[post.id] ?? post;
+  }
+
+  static void applyReview(core.ServicePost post, OzirafReview review) {
+    final current = currentPost(post);
+    final updated = current.withSubmittedReview(
+      core.ServiceReviewPreview(
+        rating: review.rating,
+        comment: review.comment,
+        authorName: review.authorName,
+        createdAt: DateTime.now(),
+      ),
+    );
+    updatedPosts.value = {...updatedPosts.value, post.id: updated};
+  }
 
   static void clearSessionData() {
     likedPostIds.value = <String>{};
@@ -671,6 +691,15 @@ class SocialServiceCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    return ValueListenableBuilder<Map<String, core.ServicePost>>(
+      valueListenable: SocialActionsStore.updatedPosts,
+      builder: (context, updatedPosts, _) {
+        return _buildCard(context, updatedPosts[post.id] ?? post);
+      },
+    );
+  }
+
+  Widget _buildCard(BuildContext context, core.ServicePost post) {
     final images = post.media.where((item) => item.isImage).toList();
     final videos = post.media.where((item) => item.isVideo).toList();
 
@@ -726,6 +755,11 @@ class SocialServiceCard extends StatelessWidget {
                       postId: post.id,
                       providerName: post.providerName,
                       description: post.description,
+                      onReviewCreated: (review) =>
+                          SocialActionsStore.applyReview(
+                            post,
+                            OzirafReview.fromJson(review),
+                          ),
                     );
                   },
                   icon: const Icon(Icons.play_circle_outline_rounded, size: 18),
@@ -1534,6 +1568,10 @@ class _VideoPoster extends StatelessWidget {
           postId: post.id,
           providerName: post.providerName,
           description: post.description,
+          onReviewCreated: (review) => SocialActionsStore.applyReview(
+            post,
+            OzirafReview.fromJson(review),
+          ),
         );
       },
       child: Container(
@@ -3032,11 +3070,16 @@ Future<void> _openCommentsSheet(
                                                 errorMessage = null;
                                               });
                                               try {
-                                                await OzirafSocialApi.createReview(
-                                                  token: token,
-                                                  postId: post.id,
-                                                  rating: rating,
-                                                  comment: controller.text,
+                                                final createdReview =
+                                                    await OzirafSocialApi.createReview(
+                                                      token: token,
+                                                      postId: post.id,
+                                                      rating: rating,
+                                                      comment: controller.text,
+                                                    );
+                                                SocialActionsStore.applyReview(
+                                                  post,
+                                                  createdReview,
                                                 );
                                                 if (sheetContext.mounted) {
                                                   Navigator.pop(sheetContext);

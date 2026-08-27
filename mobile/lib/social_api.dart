@@ -159,13 +159,13 @@ class OzirafSocialApi {
     return _items(payload).map(OzirafReview.fromJson).toList();
   }
 
-  static Future<void> createReview({
+  static Future<OzirafReview> createReview({
     required String token,
     required String postId,
     required int rating,
     required String comment,
   }) async {
-    await _request(
+    final payload = await _request(
       'POST',
       '/reviews/posts/$postId',
       token: token,
@@ -174,6 +174,10 @@ class OzirafSocialApi {
         if (comment.trim().isNotEmpty) 'comment': comment.trim(),
       },
     );
+    if (payload is Map<String, dynamic>) {
+      return OzirafReview.fromJson(payload);
+    }
+    throw Exception('El servidor no devolvió la opinión publicada.');
   }
 
   static Future<void> reportPost({

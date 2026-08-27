@@ -7,6 +7,7 @@ import 'package:oziraf/post_video_dialog.dart';
 import 'package:oziraf/provider_profile.dart';
 import 'package:oziraf/oziraf_share.dart';
 import 'package:oziraf/shorts_feed.dart';
+import 'package:oziraf/social_api.dart';
 import 'package:oziraf/social_feed.dart';
 
 void main() {
@@ -277,6 +278,51 @@ void main() {
     expect(find.text('2 opiniones'), findsOneWidget);
     expect(find.textContaining('Cliente Uno'), findsOneWidget);
     expect(find.textContaining('Excelente servicio'), findsOneWidget);
+  });
+
+  testWidgets('new review updates the service ad without reloading', (
+    tester,
+  ) async {
+    SocialActionsStore.updatedPosts.value = <String, ServicePost>{};
+    addTearDown(
+      () => SocialActionsStore.updatedPosts.value = <String, ServicePost>{},
+    );
+    const post = ServicePost(
+      id: 'post-live-review',
+      title: 'Clases de yoga',
+      description: 'Clase para principiantes',
+      category: 'Bienestar',
+      city: 'Xalapa',
+      state: 'Veracruz',
+      price: r'$150',
+      providerName: 'Profesional OZIRAF',
+      providerPhoto: '',
+      media: [],
+    );
+
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Scaffold(
+          body: SingleChildScrollView(child: SocialServiceCard(post: post)),
+        ),
+      ),
+    );
+    expect(find.text('Aún sin opiniones'), findsOneWidget);
+
+    SocialActionsStore.applyReview(
+      post,
+      const OzirafReview(
+        id: 'review-1',
+        rating: 5,
+        comment: 'Excelente clase',
+        authorName: 'Cliente Uno',
+      ),
+    );
+    await tester.pump();
+
+    expect(find.text('5.0'), findsOneWidget);
+    expect(find.text('1 opinión'), findsOneWidget);
+    expect(find.textContaining('Excelente clase'), findsOneWidget);
   });
 
   testWidgets('web video player stays embedded inside the OZIRAF page', (

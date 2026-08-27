@@ -18,6 +18,7 @@ Future<void> showPostVideoDialog(
   required String postId,
   String providerName = 'Anunciante OZIRAF',
   String description = '',
+  ValueChanged<Map<String, dynamic>>? onReviewCreated,
 }) async {
   await showDialog<void>(
     context: context,
@@ -30,6 +31,7 @@ Future<void> showPostVideoDialog(
         postId: postId,
         providerName: providerName,
         description: description,
+        onReviewCreated: onReviewCreated,
       ),
     ),
   );
@@ -86,6 +88,7 @@ class _PostVideoPlayer extends StatefulWidget {
     required this.postId,
     required this.providerName,
     required this.description,
+    this.onReviewCreated,
   });
 
   final String url;
@@ -93,6 +96,7 @@ class _PostVideoPlayer extends StatefulWidget {
   final String postId;
   final String providerName;
   final String description;
+  final ValueChanged<Map<String, dynamic>>? onReviewCreated;
 
   @override
   State<_PostVideoPlayer> createState() => _PostVideoPlayerState();
@@ -249,7 +253,11 @@ class _PostVideoPlayerState extends State<_PostVideoPlayer> {
       backgroundColor: Colors.transparent,
       barrierColor: Colors.black.withValues(alpha: .32),
       constraints: kIsWeb ? const BoxConstraints(maxWidth: 430) : null,
-      builder: (_) => _CommentsSheet(apiBase: apiBase, postId: resolvedPostId),
+      builder: (_) => _CommentsSheet(
+        apiBase: apiBase,
+        postId: resolvedPostId,
+        onReviewCreated: widget.onReviewCreated,
+      ),
     );
     await _loadReviewPreview();
     if (mounted && wasPlaying) await controller.play();
@@ -745,10 +753,15 @@ class _SocialButton extends StatelessWidget {
 }
 
 class _CommentsSheet extends StatefulWidget {
-  const _CommentsSheet({required this.apiBase, required this.postId});
+  const _CommentsSheet({
+    required this.apiBase,
+    required this.postId,
+    this.onReviewCreated,
+  });
 
   final String apiBase;
   final String postId;
+  final ValueChanged<Map<String, dynamic>>? onReviewCreated;
 
   @override
   State<_CommentsSheet> createState() => _CommentsSheetState();
@@ -845,6 +858,10 @@ class _CommentsSheetState extends State<_CommentsSheet> {
         throw Exception(
           message is String ? message : 'No se pudo publicar el comentario.',
         );
+      }
+      final created = jsonDecode(response.body);
+      if (created is Map<String, dynamic>) {
+        widget.onReviewCreated?.call(created);
       }
       comment.clear();
       await load();
