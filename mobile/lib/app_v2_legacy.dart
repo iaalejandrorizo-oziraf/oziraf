@@ -1611,13 +1611,25 @@ void ensureSuccess(int status, Object? payload) {
   if (payload is Map<String, dynamic>) {
     final message = payload['message'];
     if (message is String && message.trim().isNotEmpty) {
-      throw Exception(message);
+      throw OzirafApiException(status, message);
     }
     if (message is List && message.isNotEmpty) {
-      throw Exception(message.join(', '));
+      throw OzirafApiException(status, message.join(', '));
     }
   }
-  throw Exception('OZIRAF API $status');
+  throw OzirafApiException(status, 'OZIRAF API $status');
+}
+
+class OzirafApiException implements Exception {
+  const OzirafApiException(this.statusCode, this.message);
+
+  final int statusCode;
+  final String message;
+
+  bool get isUnauthorized => statusCode == 401 || statusCode == 403;
+
+  @override
+  String toString() => message;
 }
 
 List<ServicePost> postsFromPayload(Object? payload) {
