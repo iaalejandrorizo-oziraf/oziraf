@@ -54,12 +54,22 @@ class _OzirafAppState extends State<OzirafApp> {
       return;
     }
 
+    final cachedProfile = await sessionStore.readProfile();
+    if (cachedProfile != null && mounted) {
+      setState(() {
+        token = savedToken;
+        profile = cachedProfile;
+        restoring = false;
+      });
+    }
+
     try {
       var restoredProfile = await core.OzirafApiClient.fetchProfile(savedToken);
       final storedType = await sessionStore.readAccountType();
       if (storedType != null) {
         restoredProfile = restoredProfile.copyWith(accountType: storedType);
       }
+      await sessionStore.saveProfile(restoredProfile);
       await _syncSocialData(savedToken);
       if (!mounted) return;
       setState(() {
@@ -67,13 +77,18 @@ class _OzirafAppState extends State<OzirafApp> {
         profile = restoredProfile;
         restoring = false;
       });
-    } catch (_) {
-      await sessionStore.clear();
-      SocialActionsStore.clearSessionData();
+    } catch (error) {
+      final unauthorized =
+          error is core.OzirafApiException && error.isUnauthorized;
+      if (!unauthorized && cachedProfile != null) return;
+      if (unauthorized) {
+        await sessionStore.clear();
+        SocialActionsStore.clearSessionData();
+      }
       if (!mounted) return;
       setState(() {
-        token = null;
-        profile = null;
+        token = unauthorized ? null : savedToken;
+        profile = unauthorized ? null : cachedProfile;
         restoring = false;
       });
     }
@@ -89,6 +104,7 @@ class _OzirafAppState extends State<OzirafApp> {
     }
     await sessionStore.saveToken(accessToken);
     await sessionStore.saveAccountType(loadedProfile.accountType);
+    await sessionStore.saveProfile(loadedProfile);
     await _syncSocialData(accessToken);
     if (!mounted) return;
     setState(() {
@@ -111,7 +127,10 @@ class _OzirafAppState extends State<OzirafApp> {
     await sessionStore.saveAccountType(type);
     final current = profile;
     if (!mounted || current == null) return;
-    setState(() => profile = current.copyWith(accountType: type));
+    final updated = current.copyWith(accountType: type);
+    await sessionStore.saveProfile(updated);
+    if (!mounted) return;
+    setState(() => profile = updated);
   }
 
   Future<void> _syncSocialData(String accessToken) async {
