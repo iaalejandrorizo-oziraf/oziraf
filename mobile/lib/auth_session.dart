@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
@@ -156,11 +158,32 @@ class OzirafProfile {
     OzirafSessionStore.profileNotifier.value = profile;
     return profile;
   }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'email': email,
+    'firstName': firstName,
+    'lastName': lastName,
+    'city': city,
+    'state': state,
+    'profession': profession,
+    'phone': phone,
+    'accountType': accountType.apiValue,
+    'profilePhoto': profilePhoto,
+    'description': description,
+    'whatsapp': whatsapp,
+    'instagramUrl': instagramUrl,
+    'facebookUrl': facebookUrl,
+    'tiktokUrl': tiktokUrl,
+    'xUrl': xUrl,
+    'websiteUrl': websiteUrl,
+  };
 }
 
 class OzirafSessionStore {
   static const _tokenKey = 'oziraf_access_token';
   static const _accountTypeKey = 'oziraf_account_type';
+  static const _profileKey = 'oziraf_profile';
 
   static final ValueNotifier<String?> tokenNotifier = ValueNotifier<String?>(
     null,
@@ -206,16 +229,45 @@ class OzirafSessionStore {
     await _storage.write(key: _accountTypeKey, value: type.apiValue);
   }
 
+  Future<OzirafProfile?> readProfile() async {
+    final value = kIsWeb
+        ? web_storage.readSessionValue(_profileKey)
+        : await _storage.read(key: _profileKey);
+    if (value == null || value.trim().isEmpty) return null;
+    try {
+      final payload = jsonDecode(value);
+      if (payload is Map<String, dynamic>) {
+        return OzirafProfile.fromJson(payload);
+      }
+    } catch (_) {
+      // Ignore an old or damaged cached profile; the API can refresh it.
+    }
+    return null;
+  }
+
+  Future<void> saveProfile(OzirafProfile profile) async {
+    final value = jsonEncode(profile.toJson());
+    if (kIsWeb) {
+      web_storage.writeSessionValue(_profileKey, value);
+      profileNotifier.value = profile;
+      return;
+    }
+    await _storage.write(key: _profileKey, value: value);
+    profileNotifier.value = profile;
+  }
+
   Future<void> clear() async {
     if (kIsWeb) {
       web_storage.removeSessionValue(_tokenKey);
       web_storage.removeSessionValue(_accountTypeKey);
+      web_storage.removeSessionValue(_profileKey);
       tokenNotifier.value = null;
       profileNotifier.value = null;
       return;
     }
     await _storage.delete(key: _tokenKey);
     await _storage.delete(key: _accountTypeKey);
+    await _storage.delete(key: _profileKey);
     tokenNotifier.value = null;
     profileNotifier.value = null;
   }
