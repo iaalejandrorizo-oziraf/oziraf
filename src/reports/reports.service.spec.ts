@@ -9,7 +9,17 @@ describe('ReportsService', () => {
     post: {
       findUnique: jest.Mock;
     };
+    user: {
+      findUnique: jest.Mock;
+    };
     postReport: {
+      count: jest.Mock;
+      create: jest.Mock;
+      findMany: jest.Mock;
+      findUnique: jest.Mock;
+      update: jest.Mock;
+    };
+    userReport: {
       count: jest.Mock;
       create: jest.Mock;
       findMany: jest.Mock;
@@ -23,7 +33,17 @@ describe('ReportsService', () => {
       post: {
         findUnique: jest.fn(),
       },
+      user: {
+        findUnique: jest.fn(),
+      },
       postReport: {
+        count: jest.fn(),
+        create: jest.fn(),
+        findMany: jest.fn(),
+        findUnique: jest.fn(),
+        update: jest.fn(),
+      },
+      userReport: {
         count: jest.fn(),
         create: jest.fn(),
         findMany: jest.fn(),
@@ -127,13 +147,16 @@ describe('ReportsService', () => {
   });
 
   it('finds reports created by a user', async () => {
+    const createdAt = new Date('2026-09-03T00:00:00.000Z');
     const reports = [
       {
         id: 'report-id',
         reporterId: 'reporter-id',
+        createdAt,
       },
     ];
     prisma.postReport.findMany.mockResolvedValue(reports);
+    prisma.userReport.findMany.mockResolvedValue([]);
 
     const result = await service.findMine('reporter-id');
 
@@ -148,18 +171,41 @@ describe('ReportsService', () => {
         createdAt: 'desc',
       },
     });
-    expect(result).toBe(reports);
+    expect(prisma.userReport.findMany).toHaveBeenCalledWith({
+      where: {
+        reporterId: 'reporter-id',
+      },
+      include: {
+        targetUser: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+            status: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+    expect(result).toEqual([{ ...reports[0], type: 'POST' }]);
   });
 
   it('finds all reports with pagination for admins', async () => {
+    const createdAt = new Date('2026-09-03T00:00:00.000Z');
     const reports = [
       {
         id: 'report-id',
         status: 'OPEN',
+        createdAt,
       },
     ];
     prisma.postReport.findMany.mockResolvedValue(reports);
+    prisma.userReport.findMany.mockResolvedValue([]);
     prisma.postReport.count.mockResolvedValue(1);
+    prisma.userReport.count.mockResolvedValue(0);
 
     const result = await service.findAll({
       page: 1,
@@ -178,8 +224,19 @@ describe('ReportsService', () => {
         createdAt: 'desc',
       },
     });
+    expect(prisma.userReport.findMany).toHaveBeenCalledWith({
+      where: {
+        status: 'OPEN',
+      },
+      include: expect.any(Object),
+      skip: 0,
+      take: 10,
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
     expect(result).toEqual({
-      data: reports,
+      data: [{ ...reports[0], type: 'POST' }],
       page: 1,
       limit: 10,
       total: 1,
@@ -212,11 +269,12 @@ describe('ReportsService', () => {
       },
       include: expect.any(Object),
     });
-    expect(result).toBe(updatedReport);
+    expect(result).toEqual({ ...updatedReport, type: 'POST' });
   });
 
   it('rejects updating missing reports', async () => {
     prisma.postReport.findUnique.mockResolvedValue(null);
+    prisma.userReport.findUnique.mockResolvedValue(null);
 
     await expect(
       service.updateStatus('report-id', {
