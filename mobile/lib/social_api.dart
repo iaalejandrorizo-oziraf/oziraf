@@ -197,6 +197,23 @@ class OzirafSocialApi {
     );
   }
 
+  static Future<void> reportUser({
+    required String token,
+    required String userId,
+    required String reason,
+    String details = '',
+  }) async {
+    await _request(
+      'POST',
+      '/reports/users/$userId',
+      token: token,
+      body: {
+        'reason': reason,
+        if (details.trim().isNotEmpty) 'details': details.trim(),
+      },
+    );
+  }
+
   static Future<Object?> _request(
     String method,
     String path, {

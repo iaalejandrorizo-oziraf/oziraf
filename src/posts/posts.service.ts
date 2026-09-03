@@ -19,6 +19,7 @@ import { MyPostsQueryDto } from './dto/my-posts-query.dto';
 import { SearchPostsQueryDto } from './dto/search-posts-query.dto';
 import { UpdatePostStatusDto } from './dto/update-post-status.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
+import { assertPostContentAllowed } from './post-content-policy';
 
 const postUserInclude = {
   user: {
@@ -185,6 +186,8 @@ export class PostsService {
 
   // Crear publicación
   async create(userId: string, createPostDto: CreatePostDto) {
+    assertPostContentAllowed(createPostDto);
+
     const post = await this.prisma.post.create({
       data: {
         ...createPostDto,
@@ -517,6 +520,8 @@ export class PostsService {
 
   // Actualizar publicación
   async update(id: string, userId: string, data: UpdatePostDto) {
+    assertPostContentAllowed(data);
+
     const post = await this.prisma.post.findUnique({
       where: {
         id,

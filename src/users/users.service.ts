@@ -6,6 +6,7 @@ import {
 } from '../common/utils/pagination.util';
 import { PrismaService } from '../prisma/prisma.service';
 import { ListUsersQueryDto } from './dto/list-users-query.dto';
+import { UpdateUserBillingDto } from './dto/update-user-billing.dto';
 import { UpdateUserStatusDto } from './dto/update-user-status.dto';
 
 export const publicUserSelect = {
@@ -27,6 +28,8 @@ export const publicUserSelect = {
   xUrl: true,
   websiteUrl: true,
   status: true,
+  billingStatus: true,
+  renewalDueAt: true,
   city: true,
   description: true,
   neighborhood: true,
@@ -97,6 +100,59 @@ export class UsersService {
     ]);
 
     return buildPaginatedResponse(users, total, options);
+  }
+
+  async getAdminSummary() {
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const [
+      totalUsers,
+      activeUsers,
+      suspendedUsers,
+      paidUsers,
+      dueRenewals,
+      overdueRenewals,
+      newThisMonth,
+      advertisers,
+      requesters,
+      activePosts,
+      openPostReports,
+      openUserReports,
+    ] = await Promise.all([
+      this.prisma.user.count(),
+      this.prisma.user.count({ where: { status: 'ACTIVE' } }),
+      this.prisma.user.count({ where: { status: 'SUSPENDED' } }),
+      this.prisma.user.count({ where: { billingStatus: 'PAID' } }),
+      this.prisma.user.count({ where: { billingStatus: 'DUE' } }),
+      this.prisma.user.count({
+        where: {
+          OR: [
+            { billingStatus: 'OVERDUE' },
+            { renewalDueAt: { lt: now }, billingStatus: { not: 'PAID' } },
+          ],
+        },
+      }),
+      this.prisma.user.count({ where: { createdAt: { gte: startOfMonth } } }),
+      this.prisma.user.count({ where: { accountType: 'ANUNCIANTE' } }),
+      this.prisma.user.count({ where: { accountType: 'SOLICITANTE' } }),
+      this.prisma.post.count({ where: { status: 'ACTIVE' } }),
+      this.prisma.postReport.count({ where: { status: 'OPEN' } }),
+      this.prisma.userReport.count({ where: { status: 'OPEN' } }),
+    ]);
+
+    return {
+      totalUsers,
+      activeUsers,
+      suspendedUsers,
+      paidUsers,
+      dueRenewals,
+      overdueRenewals,
+      newThisMonth,
+      advertisers,
+      requesters,
+      activePosts,
+      openReports: openPostReports + openUserReports,
+    };
   }
 
   async findById(id: string) {
@@ -219,6 +275,19 @@ export class UsersService {
       },
       data: {
         status: data.status,
+      },
+      select: publicUserSelect,
+    });
+  }
+
+  async updateBilling(id: string, data: UpdateUserBillingDto) {
+    return this.prisma.user.update({
+      where: {
+        id,
+      },
+      data: {
+        billingStatus: data.billingStatus,
+        renewalDueAt: data.renewalDueAt ? new Date(data.renewalDueAt) : null,
       },
       select: publicUserSelect,
     });

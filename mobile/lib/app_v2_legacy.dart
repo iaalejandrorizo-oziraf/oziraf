@@ -1285,6 +1285,7 @@ class ServicePost {
     this.providerTiktokUrl = '',
     this.providerXUrl = '',
     this.providerWebsiteUrl = '',
+    this.status = 'ACTIVE',
     this.averageRating,
     this.reviewCount = 0,
     this.latestReview,
@@ -1308,6 +1309,7 @@ class ServicePost {
   final String providerTiktokUrl;
   final String providerXUrl;
   final String providerWebsiteUrl;
+  final String status;
   final List<PostMediaItem> media;
   final double? averageRating;
   final int reviewCount;
@@ -1333,6 +1335,7 @@ class ServicePost {
       providerTiktokUrl: providerTiktokUrl,
       providerXUrl: providerXUrl,
       providerWebsiteUrl: providerWebsiteUrl,
+      status: status,
       media: media,
       averageRating: averageRating,
       reviewCount: reviewCount,
@@ -1364,6 +1367,7 @@ class ServicePost {
       providerTiktokUrl: providerTiktokUrl,
       providerXUrl: providerXUrl,
       providerWebsiteUrl: providerWebsiteUrl,
+      status: status,
       media: media,
       averageRating: nextAverage,
       reviewCount: nextCount,
@@ -1408,6 +1412,7 @@ class ServicePost {
       providerTiktokUrl: text(user['tiktokUrl']),
       providerXUrl: text(user['xUrl']),
       providerWebsiteUrl: text(user['websiteUrl']),
+      status: text(json['status'], fallback: 'ACTIVE'),
       media: media,
       averageRating: averageValue is num ? averageValue.toDouble() : null,
       reviewCount: countValue is num ? countValue.toInt() : 0,

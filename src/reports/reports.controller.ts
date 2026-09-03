@@ -15,6 +15,7 @@ import { CreatePostReportDto } from './dto/create-post-report.dto';
 import { ListReportsQueryDto } from './dto/list-reports-query.dto';
 import { UpdateReportStatusDto } from './dto/update-report-status.dto';
 import { ReportsService } from './reports.service';
+import { CreateUserReportDto } from './dto/create-user-report.dto';
 
 @UseGuards(JwtAuthGuard)
 @Controller('reports')
@@ -37,6 +38,19 @@ export class ReportsController {
   @Get('me')
   async findMine(@Request() req) {
     return this.reportsService.findMine(req.user.userId);
+  }
+
+  @Post('users/:userId')
+  async reportUser(
+    @Param('userId') userId: string,
+    @Request() req,
+    @Body() createUserReportDto: CreateUserReportDto,
+  ) {
+    return this.reportsService.reportUser(
+      userId,
+      req.user.userId,
+      createUserReportDto,
+    );
   }
 
   @UseGuards(JwtAuthGuard, AdminGuard)

@@ -9,6 +9,7 @@ import {
   getPagination,
 } from '../common/utils/pagination.util';
 import { PrismaService } from '../prisma/prisma.service';
+import { assertUserTextAllowed } from '../posts/post-content-policy';
 import { CreateReviewDto } from './dto/create-review.dto';
 import { ListReviewsQueryDto } from './dto/list-reviews-query.dto';
 
@@ -17,6 +18,8 @@ export class ReviewsService {
   constructor(private prisma: PrismaService) {}
 
   async create(postId: string, authorId: string, data: CreateReviewDto) {
+    assertUserTextAllowed(data.comment, 'El comentario');
+
     const post = await this.prisma.post.findUnique({
       where: {
         id: postId,

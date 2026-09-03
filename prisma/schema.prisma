@@ -27,6 +27,8 @@ model User {
   xUrl                    String?
   websiteUrl              String?
   status                  String                   @default("ACTIVE")
+  billingStatus           String                   @default("TRIAL")
+  renewalDueAt            DateTime?
   city                    String?
   description             String?
   neighborhood            String?
@@ -37,6 +39,8 @@ model User {
   sentLeads               ContactLead[]            @relation("LeadSender")
   receivedLeads           ContactLead[]            @relation("LeadOwner")
   reports                 PostReport[]
+  filedUserReports        UserReport[]             @relation("UserReportReporter")
+  receivedUserReports     UserReport[]             @relation("UserReportTarget")
   reviews                 Review[]
   passwordResetTokens     PasswordResetToken[]
   emailVerificationTokens EmailVerificationToken[]
@@ -134,6 +138,21 @@ model PostReport {
   reporter   User     @relation(fields: [reporterId], references: [id], onDelete: Cascade)
 
   @@unique([postId, reporterId])
+}
+
+model UserReport {
+  id             String   @id @default(cuid())
+  targetUserId   String
+  reporterId     String
+  reason         String
+  details        String?
+  status         String   @default("OPEN")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  targetUser     User     @relation("UserReportTarget", fields: [targetUserId], references: [id], onDelete: Cascade)
+  reporter       User     @relation("UserReportReporter", fields: [reporterId], references: [id], onDelete: Cascade)
+
+  @@unique([targetUserId, reporterId])
 }
 
 model PasswordResetToken {

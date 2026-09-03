@@ -47,6 +47,8 @@ class OzirafProfile {
     this.tiktokUrl = '',
     this.xUrl = '',
     this.websiteUrl = '',
+    this.role = 'USER',
+    this.status = 'ACTIVE',
   });
 
   final String id;
@@ -66,6 +68,10 @@ class OzirafProfile {
   final String tiktokUrl;
   final String xUrl;
   final String websiteUrl;
+  final String role;
+  final String status;
+
+  bool get isAdmin => role.toUpperCase() == 'ADMIN';
 
   bool get hasSocialLinks =>
       whatsapp.isNotEmpty ||
@@ -109,6 +115,8 @@ class OzirafProfile {
     String? tiktokUrl,
     String? xUrl,
     String? websiteUrl,
+    String? role,
+    String? status,
   }) {
     final updated = OzirafProfile(
       id: id,
@@ -128,6 +136,8 @@ class OzirafProfile {
       tiktokUrl: tiktokUrl ?? this.tiktokUrl,
       xUrl: xUrl ?? this.xUrl,
       websiteUrl: websiteUrl ?? this.websiteUrl,
+      role: role ?? this.role,
+      status: status ?? this.status,
     );
     OzirafSessionStore.profileNotifier.value = updated;
     return updated;
@@ -154,6 +164,12 @@ class OzirafProfile {
       tiktokUrl: text(json['tiktokUrl']),
       xUrl: text(json['xUrl']),
       websiteUrl: text(json['websiteUrl']),
+      role: text(json['role']).isEmpty
+          ? 'USER'
+          : text(json['role']).toUpperCase(),
+      status: text(json['status']).isEmpty
+          ? 'ACTIVE'
+          : text(json['status']).toUpperCase(),
     );
     OzirafSessionStore.profileNotifier.value = profile;
     return profile;
@@ -177,6 +193,8 @@ class OzirafProfile {
     'tiktokUrl': tiktokUrl,
     'xUrl': xUrl,
     'websiteUrl': websiteUrl,
+    'role': role,
+    'status': status,
   };
 }
 

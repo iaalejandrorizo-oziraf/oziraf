@@ -2239,6 +2239,19 @@ Future<void> _openPostOptions(
                   );
                 },
               ),
+              ListTile(
+                leading: const Icon(Icons.gpp_bad_outlined),
+                title: const Text('Denunciar cuenta'),
+                subtitle: Text(post.providerName),
+                onTap: () {
+                  Navigator.pop(sheetContext);
+                  _openUserReportSheet(
+                    context,
+                    post,
+                    onRequireAccount: onRequireAccount,
+                  );
+                },
+              ),
             ],
           ),
         ),
@@ -2330,6 +2343,140 @@ Future<void> showOzirafPostDetail(
     builder: (sheetContext) =>
         SizedBox(height: viewport.height * .94, child: content(sheetContext)),
   );
+}
+
+Future<void> _openUserReportSheet(
+  BuildContext context,
+  core.ServicePost post, {
+  VoidCallback? onRequireAccount,
+}) async {
+  final token = OzirafSessionStore.tokenNotifier.value;
+  if (token == null || token.trim().isEmpty) {
+    _toast(context, 'Inicia sesión para denunciar una cuenta');
+    onRequireAccount?.call();
+    return;
+  }
+  if (post.providerId.trim().isEmpty) {
+    _toast(context, 'No se pudo identificar la cuenta del anunciante');
+    return;
+  }
+
+  var reason = 'HARASSMENT';
+  final details = TextEditingController();
+  var sending = false;
+  try {
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (sheetContext) => StatefulBuilder(
+        builder: (context, setSheetState) => SafeArea(
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(
+              18,
+              4,
+              18,
+              MediaQuery.viewInsetsOf(context).bottom + 18,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Denunciar a ${post.providerName}',
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<String>(
+                  initialValue: reason,
+                  decoration: const InputDecoration(
+                    labelText: 'Motivo',
+                    border: OutlineInputBorder(),
+                  ),
+                  items: const [
+                    DropdownMenuItem(
+                      value: 'HARASSMENT',
+                      child: Text('Acoso o daño a otra persona'),
+                    ),
+                    DropdownMenuItem(
+                      value: 'FRAUD',
+                      child: Text('Fraude o engaño'),
+                    ),
+                    DropdownMenuItem(
+                      value: 'IMPERSONATION',
+                      child: Text('Suplantación de identidad'),
+                    ),
+                    DropdownMenuItem(
+                      value: 'DANGEROUS',
+                      child: Text('Actividad peligrosa o ilegal'),
+                    ),
+                    DropdownMenuItem(
+                      value: 'OTHER',
+                      child: Text('Otro motivo'),
+                    ),
+                  ],
+                  onChanged: sending
+                      ? null
+                      : (value) =>
+                            setSheetState(() => reason = value ?? reason),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: details,
+                  minLines: 2,
+                  maxLines: 4,
+                  decoration: const InputDecoration(
+                    labelText: 'Detalles opcionales',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton.icon(
+                    onPressed: sending
+                        ? null
+                        : () async {
+                            setSheetState(() => sending = true);
+                            try {
+                              await OzirafSocialApi.reportUser(
+                                token: token,
+                                userId: post.providerId,
+                                reason: reason,
+                                details: details.text,
+                              );
+                              if (sheetContext.mounted) {
+                                Navigator.pop(sheetContext);
+                              }
+                              if (context.mounted) {
+                                _toast(context, 'Denuncia enviada');
+                              }
+                            } catch (e) {
+                              setSheetState(() => sending = false);
+                              if (context.mounted) {
+                                _toast(
+                                  context,
+                                  e.toString().replaceFirst('Exception: ', ''),
+                                );
+                              }
+                            }
+                          },
+                    icon: const Icon(Icons.gpp_bad_outlined),
+                    label: Text(sending ? 'Enviando...' : 'Enviar denuncia'),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  } finally {
+    details.dispose();
+  }
 }
 
 Future<void> _openReportSheet(

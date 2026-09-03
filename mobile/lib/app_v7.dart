@@ -7,6 +7,7 @@ import 'app_v2.dart' as core;
 import 'app_v3.dart' as account;
 import 'app_v4.dart' as profile_editor;
 import 'app_v5.dart' as publish;
+import 'admin_dashboard.dart';
 import 'auth_session.dart';
 import 'oziraf_share.dart';
 import 'shorts_feed.dart';
@@ -267,6 +268,7 @@ class _SocialShellState extends State<_SocialShell> {
           children: [
             _DesktopNav(
               selected: index,
+              isAdmin: widget.profile?.isAdmin ?? false,
               onSelected: (value) => setState(() => index = value),
             ),
             const VerticalDivider(width: 1, color: Color(0xFFE7E9F0)),
@@ -297,6 +299,12 @@ class _SocialShellState extends State<_SocialShell> {
               titleSpacing: 12,
               title: const _BrandHeader(compact: true),
               actions: [
+                if (widget.profile?.isAdmin ?? false)
+                  IconButton(
+                    tooltip: 'Administración',
+                    onPressed: () => setState(() => index = 7),
+                    icon: const Icon(Icons.admin_panel_settings_outlined),
+                  ),
                 Stack(
                   children: [
                     IconButton(
@@ -414,6 +422,18 @@ class _SocialShellState extends State<_SocialShell> {
         onGoAccount: requireAccount,
         onOpenMessages: openMessages,
       );
+    }
+    if (index == 7) {
+      final accessToken = widget.token;
+      if (accessToken == null || accessToken.trim().isEmpty) {
+        return const _UtilityEnvironment(
+          icon: Icons.lock_outline,
+          title: 'Área de administración',
+          subtitle: 'Inicia sesión con una cuenta administradora.',
+          cards: [],
+        );
+      }
+      return OzirafAdminDashboard(token: accessToken);
     }
 
     final accountScreen = account.OzirafAccountScreen(
@@ -1581,20 +1601,26 @@ void _toast(BuildContext context, String message) {
 }
 
 class _DesktopNav extends StatelessWidget {
-  const _DesktopNav({required this.selected, required this.onSelected});
+  const _DesktopNav({
+    required this.selected,
+    required this.isAdmin,
+    required this.onSelected,
+  });
 
   final int selected;
+  final bool isAdmin;
   final ValueChanged<int> onSelected;
 
   @override
   Widget build(BuildContext context) {
-    const items = [
-      (Icons.home_outlined, 'Inicio'),
-      (Icons.play_circle_outline, 'Shorts'),
-      (Icons.add_circle_outline, 'Publicar'),
-      (Icons.chat_bubble_outline, 'Mensajes'),
-      (Icons.bookmark_border, 'Guardados'),
-      (Icons.person_outline, 'Cuenta'),
+    final items = [
+      (Icons.home_outlined, 'Inicio', 0),
+      (Icons.play_circle_outline, 'Shorts', 1),
+      (Icons.add_circle_outline, 'Publicar', 2),
+      (Icons.chat_bubble_outline, 'Mensajes', 3),
+      (Icons.bookmark_border, 'Guardados', 5),
+      (Icons.person_outline, 'Cuenta', 4),
+      if (isAdmin) (Icons.admin_panel_settings_outlined, 'Admin', 7),
     ];
 
     return Container(
@@ -1610,11 +1636,7 @@ class _DesktopNav extends StatelessWidget {
           ),
           const SizedBox(height: 30),
           ...List.generate(items.length, (itemIndex) {
-            final shellIndex = itemIndex <= 3
-                ? itemIndex
-                : itemIndex == 4
-                ? 5
-                : 4;
+            final shellIndex = items[itemIndex].$3;
             final active = shellIndex == selected;
             return Padding(
               padding: const EdgeInsets.only(bottom: 6),
