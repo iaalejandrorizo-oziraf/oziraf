@@ -12,4 +12,4 @@ services:
     ports:
       - "8092:80"
     volumes:
-      - ./mobile/build/web:/usr/share/nginx/html:ro
+      - ./oziraf/mobile/build/web:/usr/share/nginx/html:ro
