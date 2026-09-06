@@ -73,15 +73,17 @@ model Post {
 }
 
 model PostMedia {
-  id        String   @id @default(cuid())
-  postId    String
-  kind      String
-  mimeType  String
-  fileName  String?
-  size      Int
-  data      Bytes
-  createdAt DateTime @default(now())
-  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  id            String   @id @default(cuid())
+  postId        String
+  kind          String
+  mimeType      String
+  fileName      String?
+  size          Int
+  data          Bytes?
+  storageDriver String   @default("DATABASE")
+  storageKey    String?  @unique
+  createdAt     DateTime @default(now())
+  post          Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
 
   @@index([postId])
 }

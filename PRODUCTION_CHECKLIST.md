@@ -9,6 +9,7 @@
 - Set `CORS_ORIGIN` to the public web origins.
 - Set `PUBLIC_WEB_URL` and `PUBLIC_API_URL`.
 - Configure an email provider and set `RESEND_API_KEY` plus `MAIL_FROM`.
+- Add a persistent Railway volume and set `MEDIA_STORAGE_DRIVER=LOCAL` with `MEDIA_STORAGE_PATH=/data/media`.
 - Run `prisma migrate deploy` during backend startup.
 - Build Flutter web with `OZIRAF_API_URL=https://api.oziraf.com`.
 - Configure `oziraf.com` for web and `api.oziraf.com` for the backend.
@@ -18,7 +19,7 @@
 
 ## Strongly recommended before wider growth
 
-- Move post media out of PostgreSQL into object storage such as Cloudflare R2, S3, Cloudinary or Railway volume-backed storage.
+- For larger traffic, move post media from the Railway volume to object storage such as Cloudflare R2, S3 or Cloudinary.
 - Add database backups and restore testing.
 - Add error monitoring.
 - Add structured logs for auth, payments, reports and moderation actions.
@@ -31,5 +32,5 @@
 
 - Password reset and email verification now call the mail layer, but need a real `RESEND_API_KEY` in production.
 - Billing status exists for admin tracking, but there is no payment gateway yet.
-- Media is still stored in PostgreSQL, which is acceptable for a small beta but not for growth.
+- New media can use a persistent local volume; a managed object storage provider is still recommended before high-volume growth.
 - Docker and Railway configuration still need final values once the Railway project and domains exist.

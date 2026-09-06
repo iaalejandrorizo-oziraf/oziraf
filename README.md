@@ -21,6 +21,8 @@ PUBLIC_WEB_URL="http://localhost:8092"
 PUBLIC_API_URL="http://localhost:3001"
 MAIL_FROM="OZIRAF <no-reply@oziraf.com>"
 RESEND_API_KEY=""
+MEDIA_STORAGE_DRIVER="DATABASE"
+MEDIA_STORAGE_PATH="storage/media"
 OZIRAF_ADMIN_EMAIL="admin@example.com"
 OZIRAF_ADMIN_PASSWORD="change-this-password"
 ```
@@ -48,6 +50,10 @@ docker run --env-file .env -p 3000:3000 oziraf-backend
 ```
 
 The container applies pending Prisma migrations before starting the API.
+
+## Media storage
+
+By default, uploaded post media is kept in PostgreSQL (`MEDIA_STORAGE_DRIVER=DATABASE`) so existing local installs continue working unchanged. For a growing deployment, use `MEDIA_STORAGE_DRIVER=LOCAL` and point `MEDIA_STORAGE_PATH` to persistent storage, for example `/data/media` on a Railway volume. Existing database media remains available after the change; only new uploads use the selected driver.
 
 ## Scripts
 

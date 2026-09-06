@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { PostsService } from './posts.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { MediaStorageService } from '../media-storage/media-storage.service';
 
 describe('PostsService', () => {
   let service: PostsService;
@@ -19,10 +20,18 @@ describe('PostsService', () => {
       delete: jest.Mock;
     };
     postMedia?: {
+      create: jest.Mock;
       findMany: jest.Mock;
       findUnique: jest.Mock;
       delete: jest.Mock;
     };
+  };
+  let mediaStorage: {
+    usesLocalStorage: jest.Mock;
+    createKey: jest.Mock;
+    write: jest.Mock;
+    read: jest.Mock;
+    remove: jest.Mock;
   };
 
   const expectedPostInclude = {
@@ -62,6 +71,13 @@ describe('PostsService', () => {
         delete: jest.fn(),
       },
     };
+    mediaStorage = {
+      usesLocalStorage: jest.fn().mockReturnValue(false),
+      createKey: jest.fn(),
+      write: jest.fn(),
+      read: jest.fn(),
+      remove: jest.fn(),
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -69,6 +85,10 @@ describe('PostsService', () => {
         {
           provide: PrismaService,
           useValue: prisma,
+        },
+        {
+          provide: MediaStorageService,
+          useValue: mediaStorage,
         },
       ],
     }).compile();
@@ -372,8 +392,69 @@ describe('PostsService', () => {
     expect(result).toBe(updatedPost);
   });
 
+  it('stores new media outside the database when local storage is enabled', async () => {
+    prisma.post.findUnique.mockResolvedValue({
+      id: 'post-1',
+      userId: 'user-1',
+      status: 'ACTIVE',
+    });
+    prisma.postMedia = {
+      create: jest.fn().mockResolvedValue({ id: 'media-1' }),
+      findMany: jest.fn().mockResolvedValue([]),
+      findUnique: jest.fn(),
+      delete: jest.fn(),
+    };
+    mediaStorage.usesLocalStorage.mockReturnValue(true);
+    mediaStorage.createKey.mockReturnValue('posts/post-1/file-1');
+
+    await service.addMedia('post-1', 'user-1', {
+      buffer: Buffer.from('image'),
+      mimetype: 'image/jpeg',
+      originalname: 'image.jpg',
+      size: 5,
+    });
+
+    expect(mediaStorage.write).toHaveBeenCalledWith(
+      'posts/post-1/file-1',
+      Buffer.from('image'),
+    );
+    expect(prisma.postMedia.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          data: null,
+          storageDriver: 'LOCAL',
+          storageKey: 'posts/post-1/file-1',
+        }),
+      }),
+    );
+  });
+
+  it('reads locally stored media through the same public endpoint flow', async () => {
+    prisma.postMedia = {
+      create: jest.fn(),
+      findMany: jest.fn(),
+      findUnique: jest.fn().mockResolvedValue({
+        data: null,
+        storageDriver: 'LOCAL',
+        storageKey: 'posts/post-1/file-1',
+        mimeType: 'image/jpeg',
+        size: 5,
+        post: { status: 'ACTIVE' },
+      }),
+      delete: jest.fn(),
+    };
+    mediaStorage.read.mockResolvedValue(Buffer.from('image'));
+
+    await expect(service.findMedia('media-1')).resolves.toMatchObject({
+      data: Buffer.from('image'),
+      mimeType: 'image/jpeg',
+    });
+    expect(mediaStorage.read).toHaveBeenCalledWith('posts/post-1/file-1');
+  });
+
   it('removes media when the post belongs to the user', async () => {
     prisma.postMedia = {
+      create: jest.fn(),
       findMany: jest.fn().mockResolvedValue([]),
       findUnique: jest.fn(),
       delete: jest.fn(),
@@ -395,6 +476,7 @@ describe('PostsService', () => {
 
   it('rejects removing media from another user post', async () => {
     prisma.postMedia = {
+      create: jest.fn(),
       findMany: jest.fn().mockResolvedValue([]),
       findUnique: jest.fn(),
       delete: jest.fn(),

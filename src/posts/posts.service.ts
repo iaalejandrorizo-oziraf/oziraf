@@ -3,10 +3,12 @@ import {
   Injectable,
   ForbiddenException,
   NotFoundException,
+  Optional,
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 
 import { PrismaService } from '../prisma/prisma.service';
+import { MediaStorageService } from '../media-storage/media-storage.service';
 import {
   buildPaginatedResponse,
   getPagination,
@@ -98,7 +100,10 @@ function getPostOrderBy(options: ListPostsQueryDto = {}) {
 
 @Injectable()
 export class PostsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    @Optional() private readonly mediaStorage?: MediaStorageService,
+  ) {}
 
   private async attachMediaMetadata<T extends { id: string }>(posts: T[]) {
     if (posts.length === 0) {
@@ -276,27 +281,43 @@ export class PostsService {
       throw new BadRequestException('Cada anuncio puede tener hasta 1 video');
     }
 
-    const created = await this.prisma.postMedia.create({
-      data: {
-        postId: id,
-        kind,
-        mimeType: file.mimetype,
-        fileName: file.originalname || null,
-        size: file.size,
-        data: Uint8Array.from(file.buffer),
-      },
-      select: {
-        id: true,
-        postId: true,
-        kind: true,
-        mimeType: true,
-        fileName: true,
-        size: true,
-        createdAt: true,
-      },
-    });
+    const useLocalStorage = this.mediaStorage?.usesLocalStorage() ?? false;
+    const storageKey = useLocalStorage
+      ? this.mediaStorage?.createKey(id)
+      : undefined;
 
-    return created;
+    try {
+      if (storageKey) {
+        await this.mediaStorage?.write(storageKey, file.buffer);
+      }
+
+      return await this.prisma.postMedia.create({
+        data: {
+          postId: id,
+          kind,
+          mimeType: file.mimetype,
+          fileName: file.originalname || null,
+          size: file.size,
+          data: storageKey ? null : Uint8Array.from(file.buffer),
+          storageDriver: storageKey ? 'LOCAL' : 'DATABASE',
+          storageKey: storageKey ?? null,
+        },
+        select: {
+          id: true,
+          postId: true,
+          kind: true,
+          mimeType: true,
+          fileName: true,
+          size: true,
+          createdAt: true,
+        },
+      });
+    } catch (error) {
+      if (storageKey) {
+        await this.mediaStorage?.remove(storageKey).catch(() => undefined);
+      }
+      throw error;
+    }
   }
 
   async removeMedia(id: string, mediaId: string, userId: string) {
@@ -305,6 +326,8 @@ export class PostsService {
       select: {
         id: true,
         postId: true,
+        storageDriver: true,
+        storageKey: true,
         post: {
           select: {
             userId: true,
@@ -325,6 +348,9 @@ export class PostsService {
     }
 
     await this.prisma.postMedia.delete({ where: { id: mediaId } });
+    if (media.storageDriver === 'LOCAL' && media.storageKey) {
+      await this.mediaStorage?.remove(media.storageKey).catch(() => undefined);
+    }
     return { id: mediaId };
   }
 
@@ -333,6 +359,8 @@ export class PostsService {
       where: { id: mediaId },
       select: {
         data: true,
+        storageDriver: true,
+        storageKey: true,
         mimeType: true,
         size: true,
         post: {
@@ -347,7 +375,27 @@ export class PostsService {
       throw new NotFoundException('El archivo no existe');
     }
 
-    return media;
+    if (media.data) {
+      return {
+        data: Buffer.from(media.data),
+        mimeType: media.mimeType,
+        size: media.size,
+      };
+    }
+
+    if (
+      media.storageDriver === 'LOCAL' &&
+      media.storageKey &&
+      this.mediaStorage
+    ) {
+      return {
+        data: await this.mediaStorage.read(media.storageKey),
+        mimeType: media.mimeType,
+        size: media.size,
+      };
+    }
+
+    throw new NotFoundException('El archivo no existe');
   }
 
   // Obtener todas las publicaciones
