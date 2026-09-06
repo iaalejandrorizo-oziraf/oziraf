@@ -7,7 +7,7 @@ enum _ShareTarget { whatsapp, instagram, facebook, tiktok, x, copy, more }
 
 const _publicWebUrl = String.fromEnvironment(
   'OZIRAF_PUBLIC_WEB_URL',
-  defaultValue: 'http://100.112.136.50:8092',
+  defaultValue: 'http://localhost:8092',
 );
 
 Future<void> showOzirafShareSheet(

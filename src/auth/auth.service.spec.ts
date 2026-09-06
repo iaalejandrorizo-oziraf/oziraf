@@ -3,6 +3,7 @@ import { JwtService } from '@nestjs/jwt';
 import { AuthService } from './auth.service';
 import { UsersService } from '../users/users.service';
 import * as bcrypt from 'bcrypt';
+import { MailService } from '../mail/mail.service';
 
 describe('AuthService', () => {
   let service: AuthService;
@@ -19,6 +20,10 @@ describe('AuthService', () => {
     markEmailVerified: jest.Mock;
     updatePassword: jest.Mock;
   };
+  let mailService: {
+    sendPasswordReset: jest.Mock;
+    sendEmailVerification: jest.Mock;
+  };
 
   beforeEach(async () => {
     usersService = {
@@ -34,6 +39,10 @@ describe('AuthService', () => {
       markEmailVerified: jest.fn(),
       updatePassword: jest.fn(),
     };
+    mailService = {
+      sendPasswordReset: jest.fn(),
+      sendEmailVerification: jest.fn(),
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -47,6 +56,10 @@ describe('AuthService', () => {
           useValue: {
             signAsync: jest.fn(),
           },
+        },
+        {
+          provide: MailService,
+          useValue: mailService,
         },
       ],
     }).compile();
@@ -164,8 +177,13 @@ describe('AuthService', () => {
       expect.any(String),
       expect.any(Date),
     );
+    expect(mailService.sendPasswordReset).toHaveBeenCalledWith(
+      'user@example.com',
+      expect.any(String),
+    );
     expect(result).toEqual({
-      message: 'Si el correo existe, recibirás instrucciones para recuperar tu contraseña',
+      message:
+        'Si el correo existe, recibirás instrucciones para recuperar tu contraseña',
     });
     expect(result).not.toHaveProperty('resetToken');
   });
@@ -206,6 +224,7 @@ describe('AuthService', () => {
   it('creates email verification tokens without exposing them', async () => {
     usersService.findPrivateById.mockResolvedValue({
       id: 'user-1',
+      email: 'user@example.com',
       status: 'ACTIVE',
       emailVerified: false,
     });
@@ -220,8 +239,13 @@ describe('AuthService', () => {
       expect.any(String),
       expect.any(Date),
     );
+    expect(mailService.sendEmailVerification).toHaveBeenCalledWith(
+      'user@example.com',
+      expect.any(String),
+    );
     expect(result).toEqual({
-      message: 'Si tu cuenta está activa, recibirás instrucciones para verificar tu correo',
+      message:
+        'Si tu cuenta está activa, recibirás instrucciones para verificar tu correo',
     });
     expect(result).not.toHaveProperty('verificationToken');
   });

@@ -17,6 +17,10 @@ DATABASE_URL="postgresql://USER:PASSWORD@HOST:PORT/DATABASE"
 JWT_SECRET="your-secret"
 PORT=3000
 CORS_ORIGIN="http://localhost:5173"
+PUBLIC_WEB_URL="http://localhost:8092"
+PUBLIC_API_URL="http://localhost:3001"
+MAIL_FROM="OZIRAF <no-reply@oziraf.com>"
+RESEND_API_KEY=""
 OZIRAF_ADMIN_EMAIL="admin@example.com"
 OZIRAF_ADMIN_PASSWORD="change-this-password"
 ```

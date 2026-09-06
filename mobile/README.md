@@ -44,6 +44,13 @@ flutter run -d chrome --dart-define=OZIRAF_API_URL=http://localhost:3001
 flutter run -d emulator --dart-define=OZIRAF_ANDROID_API_URL=http://10.0.2.2:3001
 ```
 
+Production builds should set the API and public web URL explicitly:
+
+```powershell
+flutter build web --release --dart-define=OZIRAF_API_URL=https://api.oziraf.com --dart-define=OZIRAF_PUBLIC_WEB_URL=https://oziraf.com
+flutter build apk --release --split-per-abi --dart-define=OZIRAF_ANDROID_API_URL=https://api.oziraf.com --dart-define=OZIRAF_PUBLIC_WEB_URL=https://oziraf.com
+```
+
 ## Outputs
 
 Debug APK:

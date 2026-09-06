@@ -13,6 +13,7 @@ import { ConfirmPasswordResetDto } from './dto/confirm-password-reset.dto';
 import { RequestPasswordResetDto } from './dto/request-password-reset.dto';
 import * as bcrypt from 'bcrypt';
 import { createHash, randomBytes } from 'crypto';
+import { MailService } from '../mail/mail.service';
 
 const PASSWORD_RESET_MESSAGE =
   'Si el correo existe, recibirás instrucciones para recuperar tu contraseña';
@@ -28,6 +29,7 @@ export class AuthService {
   constructor(
     private usersService: UsersService,
     private jwtService: JwtService,
+    private mailService: MailService,
   ) {}
 
   async register(registerDto: RegisterDto) {
@@ -134,8 +136,8 @@ export class AuthService {
       expiresAt,
     );
 
-    // The raw token must be delivered out-of-band (for example by email),
-    // never returned to the requesting client.
+    await this.mailService.sendPasswordReset(user.email, resetToken);
+
     return {
       message: PASSWORD_RESET_MESSAGE,
     };
@@ -189,7 +191,8 @@ export class AuthService {
       expiresAt,
     );
 
-    // The verification token must be delivered out-of-band.
+    await this.mailService.sendEmailVerification(user.email, verificationToken);
+
     return {
       message: EMAIL_VERIFICATION_MESSAGE,
     };
