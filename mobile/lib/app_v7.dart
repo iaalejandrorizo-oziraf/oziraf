@@ -308,6 +308,7 @@ class _SocialShellState extends State<_SocialShell> {
                 Stack(
                   children: [
                     IconButton(
+                      tooltip: 'Notificaciones',
                       onPressed: () => setState(() => index = 6),
                       icon: const Icon(Icons.notifications_none_rounded),
                     ),
@@ -326,6 +327,11 @@ class _SocialShellState extends State<_SocialShell> {
                     ),
                   ],
                 ),
+                IconButton(
+                  tooltip: 'Guardados',
+                  onPressed: () => setState(() => index = 5),
+                  icon: const Icon(Icons.bookmark_border_rounded),
+                ),
                 const SizedBox(width: 2),
                 _MobileProfileAction(onTap: () => setState(() => index = 4)),
                 const SizedBox(width: 8),
@@ -335,18 +341,11 @@ class _SocialShellState extends State<_SocialShell> {
       body: _body(),
       bottomNavigationBar: NavigationBar(
         selectedIndex: switch (index) {
-          5 => 4,
-          4 => 5,
+          4 || 5 => 4,
           >= 0 && <= 3 => index,
           _ => 0,
         },
-        onDestinationSelected: (value) => setState(
-          () => index = switch (value) {
-            4 => 5,
-            5 => 4,
-            _ => value,
-          },
-        ),
+        onDestinationSelected: (value) => setState(() => index = value),
         destinations: const [
           NavigationDestination(
             icon: Icon(Icons.home_outlined),
@@ -367,11 +366,6 @@ class _SocialShellState extends State<_SocialShell> {
             icon: Icon(Icons.chat_bubble_outline),
             selectedIcon: Icon(Icons.chat_bubble),
             label: 'Mensajes',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.bookmark_border),
-            selectedIcon: Icon(Icons.bookmark),
-            label: 'Guardados',
           ),
           NavigationDestination(
             icon: Icon(Icons.person_outline),

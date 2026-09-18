@@ -1270,91 +1270,105 @@ class _SocialActions extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         final compact = constraints.maxWidth < 430;
+        final controls = <Widget>[
+          ValueListenableBuilder<Set<String>>(
+            valueListenable: SocialActionsStore.likedPostIds,
+            builder: (context, liked, _) {
+              final active = liked.contains(post.id);
+              return _RoundAction(
+                icon: active
+                    ? Icons.favorite_rounded
+                    : Icons.favorite_border_rounded,
+                tooltip: active ? 'Quitar me gusta' : 'Me gusta',
+                active: active,
+                onTap: () => _togglePost(
+                  SocialActionsStore.likedPostIds,
+                  post.id,
+                  active ? 'Ya no te gusta' : 'Te gusta',
+                  context,
+                ),
+              );
+            },
+          ),
+          _RoundAction(
+            icon: Icons.chat_bubble_outline_rounded,
+            tooltip: 'Comentarios',
+            onTap: () => _openCommentsSheet(
+              context,
+              post,
+              onRequireAccount: onRequireAccount,
+            ),
+          ),
+          _RoundAction(
+            icon: Icons.send_outlined,
+            tooltip: 'Compartir',
+            onTap: () => shareOzirafPost(context, post),
+          ),
+          ValueListenableBuilder<Set<String>>(
+            valueListenable: SocialActionsStore.savedPostIds,
+            builder: (context, saved, _) {
+              final active = saved.contains(post.id);
+              return _RoundAction(
+                icon: active
+                    ? Icons.bookmark_rounded
+                    : Icons.bookmark_border_rounded,
+                tooltip: active ? 'Quitar guardado' : 'Guardar',
+                active: active,
+                onTap: () => _setFavorite(
+                  context,
+                  post,
+                  currentlySaved: active,
+                  onRequireAccount: onRequireAccount,
+                ),
+              );
+            },
+          ),
+        ];
 
-        return Row(
-          children: [
-            ValueListenableBuilder<Set<String>>(
-              valueListenable: SocialActionsStore.likedPostIds,
-              builder: (context, liked, _) {
-                final active = liked.contains(post.id);
-                return _RoundAction(
-                  icon: active
-                      ? Icons.favorite_rounded
-                      : Icons.favorite_border_rounded,
-                  tooltip: active ? 'Quitar me gusta' : 'Me gusta',
-                  active: active,
-                  onTap: () => _togglePost(
-                    SocialActionsStore.likedPostIds,
-                    post.id,
-                    active ? 'Ya no te gusta' : 'Te gusta',
-                    context,
-                  ),
+        Widget contactButton({required double width}) {
+          return SizedBox(
+            width: width,
+            height: 41,
+            child: FilledButton.icon(
+              onPressed: () {
+                _openContactSheet(
+                  context,
+                  post,
+                  onRequireAccount: onRequireAccount,
+                  onOpenMessages: onOpenMessages,
                 );
               },
-            ),
-            _RoundAction(
-              icon: Icons.chat_bubble_outline_rounded,
-              tooltip: 'Comentarios',
-              onTap: () => _openCommentsSheet(
-                context,
-                post,
-                onRequireAccount: onRequireAccount,
-              ),
-            ),
-            _RoundAction(
-              icon: Icons.send_outlined,
-              tooltip: 'Compartir',
-              onTap: () => shareOzirafPost(context, post),
-            ),
-            ValueListenableBuilder<Set<String>>(
-              valueListenable: SocialActionsStore.savedPostIds,
-              builder: (context, saved, _) {
-                final active = saved.contains(post.id);
-                return _RoundAction(
-                  icon: active
-                      ? Icons.bookmark_rounded
-                      : Icons.bookmark_border_rounded,
-                  tooltip: active ? 'Quitar guardado' : 'Guardar',
-                  active: active,
-                  onTap: () => _setFavorite(
-                    context,
-                    post,
-                    currentlySaved: active,
-                    onRequireAccount: onRequireAccount,
-                  ),
-                );
-              },
-            ),
-            const Spacer(),
-            SizedBox(
-              width: compact ? 126 : 160,
-              height: 41,
-              child: FilledButton.icon(
-                onPressed: () {
-                  _openContactSheet(
-                    context,
-                    post,
-                    onRequireAccount: onRequireAccount,
-                    onOpenMessages: onOpenMessages,
-                  );
-                },
-                icon: const Icon(Icons.chat_outlined, size: 16),
-                label: const Text('Contactar', overflow: TextOverflow.ellipsis),
-                style: FilledButton.styleFrom(
-                  backgroundColor: _purple,
-                  foregroundColor: Colors.white,
-                  textStyle: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w800,
-                  ),
-                  padding: const EdgeInsets.symmetric(horizontal: 9),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
+              icon: const Icon(Icons.chat_outlined, size: 16),
+              label: const Text('Contactar'),
+              style: FilledButton.styleFrom(
+                backgroundColor: _purple,
+                foregroundColor: Colors.white,
+                textStyle: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w800,
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 9),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
                 ),
               ),
             ),
-          ],
+          );
+        }
+
+        if (compact) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(children: controls),
+              const SizedBox(height: 8),
+              contactButton(width: double.infinity),
+            ],
+          );
+        }
+
+        return Row(
+          children: [...controls, const Spacer(), contactButton(width: 160)],
         );
       },
     );
