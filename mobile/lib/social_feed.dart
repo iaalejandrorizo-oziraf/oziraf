@@ -924,7 +924,11 @@ class _DesktopServiceCard extends StatelessWidget {
               SizedBox(
                 width: 292,
                 height: double.infinity,
-                child: _DesktopServicePhoto(post: current, images: images),
+                child: _DesktopServicePhoto(
+                  post: current,
+                  images: images,
+                  onRequireAccount: onRequireAccount,
+                ),
               ),
               Expanded(
                 child: Padding(
@@ -1153,10 +1157,15 @@ class _DesktopServiceCard extends StatelessWidget {
 }
 
 class _DesktopServicePhoto extends StatefulWidget {
-  const _DesktopServicePhoto({required this.post, required this.images});
+  const _DesktopServicePhoto({
+    required this.post,
+    required this.images,
+    this.onRequireAccount,
+  });
 
   final core.ServicePost post;
   final List<core.PostMediaItem> images;
+  final VoidCallback? onRequireAccount;
 
   @override
   State<_DesktopServicePhoto> createState() => _DesktopServicePhotoState();
@@ -1195,6 +1204,8 @@ class _DesktopServicePhotoState extends State<_DesktopServicePhoto> {
         images: widget.images,
         initialIndex: index,
         title: widget.post.title,
+        post: widget.post,
+        onRequireAccount: widget.onRequireAccount,
       ),
     );
   }
@@ -1338,11 +1349,15 @@ class _DesktopPhotoViewer extends StatefulWidget {
     required this.images,
     required this.initialIndex,
     required this.title,
+    required this.post,
+    this.onRequireAccount,
   });
 
   final List<core.PostMediaItem> images;
   final int initialIndex;
   final String title;
+  final core.ServicePost post;
+  final VoidCallback? onRequireAccount;
 
   @override
   State<_DesktopPhotoViewer> createState() => _DesktopPhotoViewerState();
@@ -1402,6 +1417,46 @@ class _DesktopPhotoViewerState extends State<_DesktopPhotoViewer> {
                         fontWeight: FontWeight.w800,
                       ),
                     ),
+                  ),
+                  IconButton(
+                    tooltip: 'Comentar',
+                    onPressed: () => _openCommentsSheet(
+                      context,
+                      widget.post,
+                      onRequireAccount: widget.onRequireAccount,
+                    ),
+                    icon: const Icon(
+                      Icons.chat_bubble_outline_rounded,
+                      color: Colors.white,
+                    ),
+                  ),
+                  ValueListenableBuilder<Set<String>>(
+                    valueListenable: SocialActionsStore.savedPostIds,
+                    builder: (context, saved, _) {
+                      final active = saved.contains(widget.post.id);
+                      return IconButton(
+                        tooltip: active ? 'Quitar guardado' : 'Guardar',
+                        onPressed: () => _setFavorite(
+                          context,
+                          widget.post,
+                          currentlySaved: active,
+                          onRequireAccount: widget.onRequireAccount,
+                        ),
+                        icon: Icon(
+                          active
+                              ? Icons.bookmark_rounded
+                              : Icons.bookmark_border_rounded,
+                          color: active
+                              ? const Color(0xFFB9A8FF)
+                              : Colors.white,
+                        ),
+                      );
+                    },
+                  ),
+                  IconButton(
+                    tooltip: 'Compartir',
+                    onPressed: () => shareOzirafPost(context, widget.post),
+                    icon: const Icon(Icons.send_outlined, color: Colors.white),
                   ),
                   Text(
                     '${index + 1}/${widget.images.length}',
