@@ -267,15 +267,16 @@ class _SocialFeedScreenState extends State<SocialFeedScreen> {
                 ),
                 const SizedBox(height: 14),
               ] else ...[
-                _TopTabs(selected: topTab, onChanged: selectTopTab),
-                const SizedBox(height: 11),
                 _SearchBox(
                   controller: searchController,
                   onChanged: () => setState(() {}),
-                  onFilters: openFilters,
-                  filtersActive: activeFilter != _FeedFilter.all,
                 ),
                 const SizedBox(height: 12),
+                _MobileLocationSelector(
+                  active: topTab == 2,
+                  onTap: () => selectTopTab(2),
+                ),
+                const SizedBox(height: 14),
               ],
               _CategoryStrip(
                 categories: categories,
@@ -285,6 +286,13 @@ class _SocialFeedScreenState extends State<SocialFeedScreen> {
                 },
               ),
               const SizedBox(height: 14),
+              if (!desktop) ...[
+                _MobileFeedHeading(
+                  onFilters: openFilters,
+                  filtersActive: activeFilter != _FeedFilter.all,
+                ),
+                const SizedBox(height: 12),
+              ],
               if (loading)
                 const Padding(
                   padding: EdgeInsets.symmetric(vertical: 70),
@@ -408,99 +416,112 @@ class _DesktopFeedHeading extends StatelessWidget {
   }
 }
 
-class _TopTabs extends StatelessWidget {
-  const _TopTabs({required this.selected, required this.onChanged});
+class _MobileLocationSelector extends StatelessWidget {
+  const _MobileLocationSelector({required this.active, required this.onTap});
 
-  final int selected;
-  final ValueChanged<int> onChanged;
+  final bool active;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    const labels = ['Servicios', 'Con fotos', 'Cerca de ti'];
-
-    return Container(
-      height: 54,
-      padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: _border),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x07000000),
-            blurRadius: 10,
-            offset: Offset(0, 3),
-          ),
-        ],
-      ),
-      child: Row(
-        children: List.generate(labels.length, (index) {
-          final active = selected == index;
-
-          return Expanded(
-            child: InkWell(
-              borderRadius: BorderRadius.circular(22),
-              onTap: () => onChanged(index),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 180),
-                decoration: BoxDecoration(
-                  color: active ? _purpleSoft : Colors.transparent,
-                  borderRadius: BorderRadius.circular(22),
-                ),
-                alignment: Alignment.center,
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    if (index == 0) ...[
-                      Icon(
-                        Icons.design_services_outlined,
-                        size: 16,
-                        color: active ? _purple : _muted,
-                      ),
-                      const SizedBox(width: 5),
-                    ],
-                    if (index == 2) ...[
-                      Icon(
-                        Icons.location_on_outlined,
-                        size: 17,
-                        color: active ? _purple : _muted,
-                      ),
-                      const SizedBox(width: 4),
-                    ],
-                    Flexible(
-                      child: Text(
-                        labels[index],
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w800,
-                          color: active ? _purple : _text,
-                        ),
+    return ValueListenableBuilder<OzirafProfile?>(
+      valueListenable: OzirafSessionStore.profileNotifier,
+      builder: (context, profile, _) {
+        final location = [
+          profile?.city ?? '',
+          profile?.state ?? '',
+        ].where((value) => value.trim().isNotEmpty).join(', ');
+        return Material(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(12),
+            onTap: onTap,
+            child: Container(
+              height: 52,
+              padding: const EdgeInsets.symmetric(horizontal: 15),
+              decoration: BoxDecoration(
+                border: Border.all(color: active ? _purple : _border),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.location_on_outlined,
+                    color: active ? _purple : const Color(0xFF555B69),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      location.isEmpty ? 'Selecciona tu ubicación' : location,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 14.5,
+                        fontWeight: FontWeight.w700,
+                        color: location.isEmpty ? _muted : _text,
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                  Icon(
+                    active
+                        ? Icons.check_circle_rounded
+                        : Icons.keyboard_arrow_down_rounded,
+                    color: active ? _purple : _muted,
+                  ),
+                ],
               ),
             ),
-          );
-        }),
-      ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _MobileFeedHeading extends StatelessWidget {
+  const _MobileFeedHeading({
+    required this.onFilters,
+    required this.filtersActive,
+  });
+
+  final VoidCallback onFilters;
+  final bool filtersActive;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        const Expanded(
+          child: Text(
+            'Servicios cerca de ti',
+            style: TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.w900,
+              color: _text,
+            ),
+          ),
+        ),
+        IconButton(
+          tooltip: 'Filtros',
+          onPressed: onFilters,
+          style: IconButton.styleFrom(
+            foregroundColor: filtersActive ? _purple : _text,
+            backgroundColor: Colors.white,
+            side: BorderSide(color: filtersActive ? _purple : _border),
+          ),
+          icon: const Icon(Icons.tune_rounded),
+        ),
+      ],
     );
   }
 }
 
 class _SearchBox extends StatelessWidget {
-  const _SearchBox({
-    required this.controller,
-    required this.onChanged,
-    required this.onFilters,
-    required this.filtersActive,
-  });
+  const _SearchBox({required this.controller, required this.onChanged});
 
   final TextEditingController controller;
   final VoidCallback onChanged;
-  final VoidCallback onFilters;
-  final bool filtersActive;
 
   @override
   Widget build(BuildContext context) {
@@ -508,7 +529,7 @@ class _SearchBox extends StatelessWidget {
       height: 55,
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(19),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: _border),
         boxShadow: const [
           BoxShadow(
@@ -529,15 +550,6 @@ class _SearchBox extends StatelessWidget {
             Icons.search_rounded,
             size: 24,
             color: Color(0xFF414451),
-          ),
-          suffixIcon: IconButton(
-            tooltip: 'Filtros',
-            onPressed: onFilters,
-            icon: Icon(
-              Icons.tune_rounded,
-              size: 23,
-              color: filtersActive ? _purple : const Color(0xFF414451),
-            ),
           ),
           border: InputBorder.none,
         ),
@@ -786,7 +798,7 @@ class SocialServiceCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 14),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(8),
         border: Border.all(color: _border),
         boxShadow: const [
           BoxShadow(
@@ -800,14 +812,6 @@ class SocialServiceCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(14, 12, 7, 10),
-            child: _ProviderHeader(
-              post: post,
-              onRequireAccount: onRequireAccount,
-              onOpenMessages: onOpenMessages,
-            ),
-          ),
           if (images.isNotEmpty)
             _SocialCarousel(images: images)
           else if (videos.isNotEmpty)
@@ -815,7 +819,15 @@ class SocialServiceCard extends StatelessWidget {
           else
             _NoMediaPlaceholder(category: post.category, title: post.title),
           Padding(
-            padding: const EdgeInsets.fromLTRB(15, 13, 15, 0),
+            padding: const EdgeInsets.fromLTRB(15, 13, 8, 4),
+            child: _ProviderHeader(
+              post: post,
+              onRequireAccount: onRequireAccount,
+              onOpenMessages: onOpenMessages,
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(15, 8, 15, 0),
             child: _PostInformation(post: post),
           ),
           if (images.isNotEmpty && videos.isNotEmpty) ...[
