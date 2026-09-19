@@ -1152,20 +1152,61 @@ class _DesktopServiceCard extends StatelessWidget {
   }
 }
 
-class _DesktopServicePhoto extends StatelessWidget {
+class _DesktopServicePhoto extends StatefulWidget {
   const _DesktopServicePhoto({required this.post, required this.images});
 
   final core.ServicePost post;
   final List<core.PostMediaItem> images;
 
   @override
+  State<_DesktopServicePhoto> createState() => _DesktopServicePhotoState();
+}
+
+class _DesktopServicePhotoState extends State<_DesktopServicePhoto> {
+  late final PageController controller;
+  int index = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    controller = PageController();
+  }
+
+  @override
+  void dispose() {
+    controller.dispose();
+    super.dispose();
+  }
+
+  void moveTo(int nextIndex) {
+    if (nextIndex < 0 || nextIndex >= widget.images.length) return;
+    controller.animateToPage(
+      nextIndex,
+      duration: const Duration(milliseconds: 220),
+      curve: Curves.easeOutCubic,
+    );
+  }
+
+  Future<void> openViewer() {
+    return showDialog<void>(
+      context: context,
+      barrierColor: Colors.black.withValues(alpha: .85),
+      builder: (context) => _DesktopPhotoViewer(
+        images: widget.images,
+        initialIndex: index,
+        title: widget.post.title,
+      ),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
-    if (images.isEmpty) {
+    if (widget.images.isEmpty) {
       return Container(
         color: _purpleSoft,
         alignment: Alignment.center,
         child: Icon(
-          _categoryIcon(post.category),
+          _categoryIcon(widget.post.category),
           size: 72,
           color: _purple.withValues(alpha: .45),
         ),
@@ -1175,16 +1216,68 @@ class _DesktopServicePhoto extends StatelessWidget {
     return Stack(
       fit: StackFit.expand,
       children: [
-        Image.network(
-          images.first.url,
-          fit: BoxFit.cover,
-          errorBuilder: (_, _, _) => const ColoredBox(
-            color: Color(0xFFF0F2F7),
-            child: Center(
-              child: Icon(Icons.broken_image_outlined, color: _muted),
+        PageView.builder(
+          controller: controller,
+          itemCount: widget.images.length,
+          onPageChanged: (value) => setState(() => index = value),
+          itemBuilder: (_, itemIndex) => InkWell(
+            onTap: openViewer,
+            child: Image.network(
+              widget.images[itemIndex].url,
+              fit: BoxFit.cover,
+              errorBuilder: (_, _, _) => const ColoredBox(
+                color: Color(0xFFF0F2F7),
+                child: Center(
+                  child: Icon(Icons.broken_image_outlined, color: _muted),
+                ),
+              ),
             ),
           ),
         ),
+        if (widget.images.length > 1 && index > 0)
+          Positioned(
+            left: 10,
+            top: 0,
+            bottom: 0,
+            child: Center(
+              child: _Arrow(
+                icon: Icons.chevron_left_rounded,
+                onTap: () => moveTo(index - 1),
+              ),
+            ),
+          ),
+        if (widget.images.length > 1 && index < widget.images.length - 1)
+          Positioned(
+            right: 10,
+            top: 0,
+            bottom: 0,
+            child: Center(
+              child: _Arrow(
+                icon: Icons.chevron_right_rounded,
+                onTap: () => moveTo(index + 1),
+              ),
+            ),
+          ),
+        if (widget.images.length > 1)
+          Positioned(
+            top: 12,
+            right: 12,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+              decoration: BoxDecoration(
+                color: Colors.black54,
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Text(
+                '${index + 1}/${widget.images.length}',
+                style: const TextStyle(
+                  fontSize: 11,
+                  color: Colors.white,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+          ),
         Positioned(
           left: 12,
           bottom: 12,
@@ -1203,7 +1296,7 @@ class _DesktopServicePhoto extends StatelessWidget {
                 ),
                 const SizedBox(width: 5),
                 Text(
-                  '${images.length} fotos',
+                  '${widget.images.length} fotos',
                   style: const TextStyle(
                     fontSize: 11,
                     color: Colors.white,
@@ -1214,7 +1307,169 @@ class _DesktopServicePhoto extends StatelessWidget {
             ),
           ),
         ),
+        Positioned(
+          left: 0,
+          right: 0,
+          bottom: 13,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: List.generate(widget.images.length, (dot) {
+              final active = dot == index;
+              return AnimatedContainer(
+                duration: const Duration(milliseconds: 160),
+                width: active ? 15 : 6,
+                height: 6,
+                margin: const EdgeInsets.symmetric(horizontal: 3),
+                decoration: BoxDecoration(
+                  color: active ? Colors.white : Colors.white60,
+                  borderRadius: BorderRadius.circular(9),
+                ),
+              );
+            }),
+          ),
+        ),
       ],
+    );
+  }
+}
+
+class _DesktopPhotoViewer extends StatefulWidget {
+  const _DesktopPhotoViewer({
+    required this.images,
+    required this.initialIndex,
+    required this.title,
+  });
+
+  final List<core.PostMediaItem> images;
+  final int initialIndex;
+  final String title;
+
+  @override
+  State<_DesktopPhotoViewer> createState() => _DesktopPhotoViewerState();
+}
+
+class _DesktopPhotoViewerState extends State<_DesktopPhotoViewer> {
+  late final PageController controller;
+  late int index;
+
+  @override
+  void initState() {
+    super.initState();
+    index = widget.initialIndex;
+    controller = PageController(initialPage: index);
+  }
+
+  @override
+  void dispose() {
+    controller.dispose();
+    super.dispose();
+  }
+
+  void moveTo(int nextIndex) {
+    if (nextIndex < 0 || nextIndex >= widget.images.length) return;
+    controller.animateToPage(
+      nextIndex,
+      duration: const Duration(milliseconds: 220),
+      curve: Curves.easeOutCubic,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final viewport = MediaQuery.sizeOf(context);
+    return Dialog(
+      insetPadding: const EdgeInsets.all(24),
+      backgroundColor: const Color(0xFF111219),
+      clipBehavior: Clip.antiAlias,
+      child: SizedBox(
+        width: viewport.width.clamp(640, 1120).toDouble(),
+        height: viewport.height.clamp(520, 820).toDouble(),
+        child: Column(
+          children: [
+            Container(
+              height: 58,
+              padding: const EdgeInsets.symmetric(horizontal: 18),
+              color: const Color(0xFF191A22),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      widget.title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                  Text(
+                    '${index + 1}/${widget.images.length}',
+                    style: const TextStyle(color: Colors.white70),
+                  ),
+                  const SizedBox(width: 10),
+                  IconButton(
+                    tooltip: 'Cerrar visor',
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(Icons.close_rounded, color: Colors.white),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  PageView.builder(
+                    controller: controller,
+                    itemCount: widget.images.length,
+                    onPageChanged: (value) => setState(() => index = value),
+                    itemBuilder: (_, itemIndex) => InteractiveViewer(
+                      minScale: 0.8,
+                      maxScale: 4,
+                      child: Center(
+                        child: Image.network(
+                          widget.images[itemIndex].url,
+                          fit: BoxFit.contain,
+                          errorBuilder: (_, _, _) => const Icon(
+                            Icons.broken_image_outlined,
+                            color: Colors.white54,
+                            size: 52,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  if (index > 0)
+                    Positioned(
+                      left: 18,
+                      top: 0,
+                      bottom: 0,
+                      child: Center(
+                        child: _Arrow(
+                          icon: Icons.chevron_left_rounded,
+                          onTap: () => moveTo(index - 1),
+                        ),
+                      ),
+                    ),
+                  if (index < widget.images.length - 1)
+                    Positioned(
+                      right: 18,
+                      top: 0,
+                      bottom: 0,
+                      child: Center(
+                        child: _Arrow(
+                          icon: Icons.chevron_right_rounded,
+                          onTap: () => moveTo(index + 1),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
