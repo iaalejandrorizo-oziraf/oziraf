@@ -1393,48 +1393,86 @@ class _DesktopPhotoViewerState extends State<_DesktopPhotoViewer> {
   Widget build(BuildContext context) {
     final viewport = MediaQuery.sizeOf(context);
     return Dialog(
-      insetPadding: const EdgeInsets.all(24),
-      backgroundColor: const Color(0xFF111219),
+      insetPadding: const EdgeInsets.all(28),
+      backgroundColor: const Color(0xFF101116),
       clipBehavior: Clip.antiAlias,
       child: SizedBox(
         width: viewport.width.clamp(640, 1120).toDouble(),
-        height: viewport.height.clamp(520, 820).toDouble(),
+        height: viewport.height.clamp(560, 860).toDouble(),
         child: Column(
           children: [
             Container(
-              height: 58,
+              height: 70,
               padding: const EdgeInsets.symmetric(horizontal: 18),
-              color: const Color(0xFF191A22),
+              color: const Color(0xFF191A21),
               child: Row(
                 children: [
+                  _SocialAvatar(
+                    photo: widget.post.providerPhoto,
+                    name: widget.post.providerName,
+                    size: 34,
+                  ),
+                  const SizedBox(width: 10),
                   Expanded(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          widget.title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          widget.post.providerName,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: Color(0xFFA8ABB7),
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 9,
+                      vertical: 5,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: .09),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
                     child: Text(
-                      widget.title,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                      '${index + 1}/${widget.images.length}',
                       style: const TextStyle(
                         color: Colors.white,
+                        fontSize: 12,
                         fontWeight: FontWeight.w800,
                       ),
                     ),
                   ),
-                  IconButton(
+                  const SizedBox(width: 8),
+                  _ViewerIconButton(
                     tooltip: 'Comentar',
                     onPressed: () => _openCommentsSheet(
                       context,
                       widget.post,
                       onRequireAccount: widget.onRequireAccount,
                     ),
-                    icon: const Icon(
-                      Icons.chat_bubble_outline_rounded,
-                      color: Colors.white,
-                    ),
+                    icon: Icons.chat_bubble_outline_rounded,
                   ),
                   ValueListenableBuilder<Set<String>>(
                     valueListenable: SocialActionsStore.savedPostIds,
                     builder: (context, saved, _) {
                       final active = saved.contains(widget.post.id);
-                      return IconButton(
+                      return _ViewerIconButton(
                         tooltip: active ? 'Quitar guardado' : 'Guardar',
                         onPressed: () => _setFavorite(
                           context,
@@ -1442,87 +1480,166 @@ class _DesktopPhotoViewerState extends State<_DesktopPhotoViewer> {
                           currentlySaved: active,
                           onRequireAccount: widget.onRequireAccount,
                         ),
-                        icon: Icon(
-                          active
-                              ? Icons.bookmark_rounded
-                              : Icons.bookmark_border_rounded,
-                          color: active
-                              ? const Color(0xFFB9A8FF)
-                              : Colors.white,
-                        ),
+                        icon: active
+                            ? Icons.bookmark_rounded
+                            : Icons.bookmark_border_rounded,
+                        active: active,
                       );
                     },
                   ),
-                  IconButton(
+                  _ViewerIconButton(
                     tooltip: 'Compartir',
                     onPressed: () => shareOzirafPost(context, widget.post),
-                    icon: const Icon(Icons.send_outlined, color: Colors.white),
+                    icon: Icons.send_outlined,
                   ),
-                  Text(
-                    '${index + 1}/${widget.images.length}',
-                    style: const TextStyle(color: Colors.white70),
-                  ),
-                  const SizedBox(width: 10),
-                  IconButton(
+                  _ViewerIconButton(
                     tooltip: 'Cerrar visor',
                     onPressed: () => Navigator.pop(context),
-                    icon: const Icon(Icons.close_rounded, color: Colors.white),
+                    icon: Icons.close_rounded,
                   ),
                 ],
               ),
             ),
             Expanded(
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  PageView.builder(
-                    controller: controller,
-                    itemCount: widget.images.length,
-                    onPageChanged: (value) => setState(() => index = value),
-                    itemBuilder: (_, itemIndex) => InteractiveViewer(
-                      minScale: 0.8,
-                      maxScale: 4,
-                      child: Center(
-                        child: Image.network(
-                          widget.images[itemIndex].url,
-                          fit: BoxFit.contain,
-                          errorBuilder: (_, _, _) => const Icon(
-                            Icons.broken_image_outlined,
-                            color: Colors.white54,
-                            size: 52,
+              child: ColoredBox(
+                color: const Color(0xFF0B0C10),
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    PageView.builder(
+                      controller: controller,
+                      itemCount: widget.images.length,
+                      onPageChanged: (value) => setState(() => index = value),
+                      itemBuilder: (_, itemIndex) => InteractiveViewer(
+                        minScale: 0.8,
+                        maxScale: 4,
+                        child: Center(
+                          child: Image.network(
+                            widget.images[itemIndex].url,
+                            fit: BoxFit.contain,
+                            errorBuilder: (_, _, _) => const Icon(
+                              Icons.broken_image_outlined,
+                              color: Colors.white54,
+                              size: 52,
+                            ),
                           ),
                         ),
                       ),
                     ),
-                  ),
-                  if (index > 0)
-                    Positioned(
-                      left: 18,
-                      top: 0,
-                      bottom: 0,
-                      child: Center(
-                        child: _Arrow(
-                          icon: Icons.chevron_left_rounded,
-                          onTap: () => moveTo(index - 1),
+                    if (index > 0)
+                      Positioned(
+                        left: 18,
+                        top: 0,
+                        bottom: 0,
+                        child: Center(
+                          child: _ViewerIconButton(
+                            tooltip: 'Foto anterior',
+                            onPressed: () => moveTo(index - 1),
+                            icon: Icons.chevron_left_rounded,
+                            large: true,
+                          ),
+                        ),
+                      ),
+                    if (index < widget.images.length - 1)
+                      Positioned(
+                        right: 18,
+                        top: 0,
+                        bottom: 0,
+                        child: Center(
+                          child: _ViewerIconButton(
+                            tooltip: 'Foto siguiente',
+                            onPressed: () => moveTo(index + 1),
+                            icon: Icons.chevron_right_rounded,
+                            large: true,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+            Container(
+              height: 94,
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+              color: const Color(0xFF191A21),
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: widget.images.length,
+                separatorBuilder: (_, _) => const SizedBox(width: 9),
+                itemBuilder: (context, itemIndex) {
+                  final selected = itemIndex == index;
+                  return InkWell(
+                    borderRadius: BorderRadius.circular(7),
+                    onTap: () => moveTo(itemIndex),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 160),
+                      width: 78,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(7),
+                        border: Border.all(
+                          color: selected
+                              ? const Color(0xFF9B84FF)
+                              : Colors.white24,
+                          width: selected ? 2 : 1,
+                        ),
+                      ),
+                      clipBehavior: Clip.antiAlias,
+                      child: Image.network(
+                        widget.images[itemIndex].url,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, _, _) => const ColoredBox(
+                          color: Color(0xFF282A34),
+                          child: Icon(
+                            Icons.broken_image_outlined,
+                            color: Colors.white54,
+                          ),
                         ),
                       ),
                     ),
-                  if (index < widget.images.length - 1)
-                    Positioned(
-                      right: 18,
-                      top: 0,
-                      bottom: 0,
-                      child: Center(
-                        child: _Arrow(
-                          icon: Icons.chevron_right_rounded,
-                          onTap: () => moveTo(index + 1),
-                        ),
-                      ),
-                    ),
-                ],
+                  );
+                },
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ViewerIconButton extends StatelessWidget {
+  const _ViewerIconButton({
+    required this.tooltip,
+    required this.onPressed,
+    required this.icon,
+    this.active = false,
+    this.large = false,
+  });
+
+  final String tooltip;
+  final VoidCallback onPressed;
+  final IconData icon;
+  final bool active;
+  final bool large;
+
+  @override
+  Widget build(BuildContext context) {
+    final size = large ? 46.0 : 36.0;
+    return Tooltip(
+      message: tooltip,
+      child: Material(
+        color: active
+            ? const Color(0xFF654CFF)
+            : Colors.white.withValues(alpha: large ? .18 : .09),
+        borderRadius: BorderRadius.circular(size / 2),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(size / 2),
+          onTap: onPressed,
+          child: SizedBox(
+            width: size,
+            height: size,
+            child: Icon(icon, color: Colors.white, size: large ? 29 : 20),
+          ),
         ),
       ),
     );
