@@ -253,6 +253,13 @@ class _SocialShell extends StatefulWidget {
 
 class _SocialShellState extends State<_SocialShell> {
   int index = 0;
+  final desktopSearchController = TextEditingController();
+
+  @override
+  void dispose() {
+    desktopSearchController.dispose();
+    super.dispose();
+  }
 
   void requireAccount() => setState(() => index = 4);
   void openMessages() => setState(() => index = 3);
@@ -277,6 +284,7 @@ class _SocialShellState extends State<_SocialShell> {
                 children: [
                   if (index != 1)
                     _DesktopTopBar(
+                      searchController: desktopSearchController,
                       onNotifications: () => setState(() => index = 6),
                       onAccount: () => setState(() => index = 4),
                     ),
@@ -365,7 +373,7 @@ class _SocialShellState extends State<_SocialShell> {
           NavigationDestination(
             icon: Icon(Icons.chat_bubble_outline),
             selectedIcon: Icon(Icons.chat_bubble),
-            label: 'Mensajes',
+            label: 'Solicitudes',
           ),
           NavigationDestination(
             icon: Icon(Icons.person_outline),
@@ -381,6 +389,7 @@ class _SocialShellState extends State<_SocialShell> {
     if (index == 0) {
       return SocialFeedScreen(
         initialPostId: widget.initialPostId,
+        desktopSearchController: desktopSearchController,
         onPublish: () => setState(() => index = 2),
         onOpenSaved: () => setState(() => index = 5),
         onRequireAccount: requireAccount,
@@ -515,17 +524,19 @@ class _MobileProfileAction extends StatelessWidget {
 
 class _DesktopTopBar extends StatelessWidget {
   const _DesktopTopBar({
+    required this.searchController,
     required this.onNotifications,
     required this.onAccount,
   });
 
+  final TextEditingController searchController;
   final VoidCallback onNotifications;
   final VoidCallback onAccount;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 72,
+      height: 82,
       padding: const EdgeInsets.fromLTRB(24, 12, 24, 12),
       decoration: const BoxDecoration(
         color: Colors.white,
@@ -533,18 +544,58 @@ class _DesktopTopBar extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const Expanded(
-            child: Text(
-              'Encuentra servicios cerca de ti',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                color: Color(0xFF1D2130),
-                fontSize: 18,
-                fontWeight: FontWeight.w900,
+          SizedBox(
+            width: 430,
+            height: 48,
+            child: TextField(
+              controller: searchController,
+              decoration: InputDecoration(
+                hintText: '¿Qué servicio necesitas?',
+                prefixIcon: const Icon(Icons.search_rounded),
+                filled: true,
+                fillColor: const Color(0xFFF9FAFC),
+                contentPadding: EdgeInsets.zero,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: Color(0xFFE0E3EB)),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: Color(0xFFE0E3EB)),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(
+                    color: Color(0xFF654CFF),
+                    width: 1.4,
+                  ),
+                ),
               ),
             ),
           ),
+          const SizedBox(width: 18),
+          Container(
+            height: 48,
+            padding: const EdgeInsets.symmetric(horizontal: 14),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              border: Border.all(color: const Color(0xFFE0E3EB)),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Row(
+              children: [
+                Icon(Icons.location_on_outlined, size: 20),
+                SizedBox(width: 8),
+                Text(
+                  'Xalapa, Veracruz',
+                  style: TextStyle(fontWeight: FontWeight.w700),
+                ),
+                SizedBox(width: 6),
+                Icon(Icons.keyboard_arrow_down_rounded),
+              ],
+            ),
+          ),
+          const Spacer(),
           Stack(
             children: [
               IconButton.filledTonal(
@@ -582,45 +633,13 @@ class _DesktopTopBar extends StatelessWidget {
                 borderRadius: BorderRadius.circular(22),
                 onTap: onAccount,
                 child: Container(
-                  width: 180,
-                  padding: const EdgeInsets.fromLTRB(7, 5, 11, 5),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF8F9FC),
-                    borderRadius: BorderRadius.circular(22),
-                    border: Border.all(color: const Color(0xFFE7E9F0)),
-                  ),
+                  padding: const EdgeInsets.all(2),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      _ShellProfileAvatar(profile: profile, size: 36),
-                      const SizedBox(width: 8),
-                      Flexible(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              name,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                color: Color(0xFF1D2130),
-                                fontSize: 12.5,
-                                fontWeight: FontWeight.w900,
-                              ),
-                            ),
-                            Text(
-                              subtitle,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                color: Color(0xFF697080),
-                                fontSize: 10.5,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ],
-                        ),
+                      Tooltip(
+                        message: '$name · $subtitle',
+                        child: _ShellProfileAvatar(profile: profile, size: 38),
                       ),
                     ],
                   ),
@@ -1611,14 +1630,14 @@ class _DesktopNav extends StatelessWidget {
       (Icons.home_outlined, 'Inicio', 0),
       (Icons.play_circle_outline, 'Shorts', 1),
       (Icons.add_circle_outline, 'Publicar', 2),
-      (Icons.chat_bubble_outline, 'Mensajes', 3),
+      (Icons.chat_bubble_outline, 'Solicitudes', 3),
       (Icons.bookmark_border, 'Guardados', 5),
       (Icons.person_outline, 'Cuenta', 4),
       if (isAdmin) (Icons.admin_panel_settings_outlined, 'Admin', 7),
     ];
 
     return Container(
-      width: 190,
+      width: 220,
       color: Colors.white,
       padding: const EdgeInsets.fromLTRB(14, 22, 14, 18),
       child: Column(
@@ -1661,27 +1680,41 @@ class _DesktopNav extends StatelessWidget {
             );
           }),
           const Spacer(),
-          Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFFF4F1FF), Color(0xFFEEF8FF)],
+          const _DesktopNavigationHint(),
+        ],
+      ),
+    );
+  }
+}
+
+class _DesktopNavigationHint extends StatelessWidget {
+  const _DesktopNavigationHint();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8F7FC),
+        border: Border.all(color: const Color(0xFFE7E9F0)),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: const Row(
+        children: [
+          Icon(
+            Icons.verified_user_outlined,
+            size: 18,
+            color: Color(0xFF654CFF),
+          ),
+          SizedBox(width: 9),
+          Expanded(
+            child: Text(
+              'Explora perfiles y servicios verificados.',
+              style: TextStyle(
+                fontSize: 12,
+                color: Color(0xFF656A78),
+                height: 1.3,
               ),
-              borderRadius: BorderRadius.circular(18),
-            ),
-            child: const Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '¿Eres profesional?',
-                  style: TextStyle(fontWeight: FontWeight.w900),
-                ),
-                SizedBox(height: 5),
-                Text(
-                  'Publica tus servicios y conecta con nuevos clientes.',
-                  style: TextStyle(fontSize: 12, color: Color(0xFF6D7280)),
-                ),
-              ],
             ),
           ),
         ],

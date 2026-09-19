@@ -59,6 +59,7 @@ class SocialFeedScreen extends StatefulWidget {
   const SocialFeedScreen({
     super.key,
     this.initialPostId,
+    this.desktopSearchController,
     this.onPublish,
     this.onOpenSaved,
     this.onRequireAccount,
@@ -66,6 +67,7 @@ class SocialFeedScreen extends StatefulWidget {
   });
 
   final String? initialPostId;
+  final TextEditingController? desktopSearchController;
   final VoidCallback? onPublish;
   final VoidCallback? onOpenSaved;
   final VoidCallback? onRequireAccount;
@@ -76,7 +78,8 @@ class SocialFeedScreen extends StatefulWidget {
 }
 
 class _SocialFeedScreenState extends State<SocialFeedScreen> {
-  final searchController = TextEditingController();
+  late final TextEditingController searchController;
+  late final bool ownsSearchController;
 
   List<core.ServicePost> posts = const [];
   bool loading = true;
@@ -89,14 +92,21 @@ class _SocialFeedScreenState extends State<SocialFeedScreen> {
   @override
   void initState() {
     super.initState();
+    ownsSearchController = widget.desktopSearchController == null;
+    searchController =
+        widget.desktopSearchController ?? TextEditingController();
+    searchController.addListener(_onSearchChanged);
     load();
   }
 
   @override
   void dispose() {
-    searchController.dispose();
+    searchController.removeListener(_onSearchChanged);
+    if (ownsSearchController) searchController.dispose();
     super.dispose();
   }
+
+  void _onSearchChanged() => setState(() {});
 
   Future<void> load() async {
     setState(() {
@@ -250,15 +260,23 @@ class _SocialFeedScreenState extends State<SocialFeedScreen> {
               108,
             ),
             children: [
-              _TopTabs(selected: topTab, onChanged: selectTopTab),
-              const SizedBox(height: 11),
-              _SearchBox(
-                controller: searchController,
-                onChanged: () => setState(() {}),
-                onFilters: openFilters,
-                filtersActive: activeFilter != _FeedFilter.all,
-              ),
-              const SizedBox(height: 12),
+              if (desktop) ...[
+                _DesktopFeedHeading(
+                  onFilters: openFilters,
+                  filtersActive: activeFilter != _FeedFilter.all,
+                ),
+                const SizedBox(height: 14),
+              ] else ...[
+                _TopTabs(selected: topTab, onChanged: selectTopTab),
+                const SizedBox(height: 11),
+                _SearchBox(
+                  controller: searchController,
+                  onChanged: () => setState(() {}),
+                  onFilters: openFilters,
+                  filtersActive: activeFilter != _FeedFilter.all,
+                ),
+                const SizedBox(height: 12),
+              ],
               _CategoryStrip(
                 categories: categories,
                 selectedCategory: selectedCategory,
@@ -284,11 +302,17 @@ class _SocialFeedScreenState extends State<SocialFeedScreen> {
                 )
               else
                 ...filtered.map(
-                  (post) => SocialServiceCard(
-                    post: post,
-                    onRequireAccount: widget.onRequireAccount,
-                    onOpenMessages: widget.onOpenMessages,
-                  ),
+                  (post) => desktop
+                      ? _DesktopServiceCard(
+                          post: post,
+                          onRequireAccount: widget.onRequireAccount,
+                          onOpenMessages: widget.onOpenMessages,
+                        )
+                      : SocialServiceCard(
+                          post: post,
+                          onRequireAccount: widget.onRequireAccount,
+                          onOpenMessages: widget.onOpenMessages,
+                        ),
                 ),
             ],
           ),
@@ -307,7 +331,7 @@ class _SocialFeedScreenState extends State<SocialFeedScreen> {
               Expanded(
                 child: Align(
                   alignment: Alignment.topCenter,
-                  child: SizedBox(width: 730, child: feed),
+                  child: SizedBox(width: 780, child: feed),
                 ),
               ),
               const SizedBox(width: 18),
@@ -316,6 +340,7 @@ class _SocialFeedScreenState extends State<SocialFeedScreen> {
                 child: Padding(
                   padding: const EdgeInsets.only(top: 14, right: 14),
                   child: _DesktopAside(
+                    posts: posts.take(3).toList(),
                     onPublish: widget.onPublish,
                     onOpenSaved: widget.onOpenSaved,
                   ),
@@ -325,6 +350,60 @@ class _SocialFeedScreenState extends State<SocialFeedScreen> {
           ),
         );
       },
+    );
+  }
+}
+
+class _DesktopFeedHeading extends StatelessWidget {
+  const _DesktopFeedHeading({
+    required this.onFilters,
+    required this.filtersActive,
+  });
+
+  final VoidCallback onFilters;
+  final bool filtersActive;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        const Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Servicios cerca de ti',
+                style: TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.w900,
+                  color: _text,
+                ),
+              ),
+              SizedBox(height: 3),
+              Text(
+                'Encuentra personas de confianza para tus proyectos.',
+                style: TextStyle(fontSize: 13, color: _muted),
+              ),
+            ],
+          ),
+        ),
+        OutlinedButton.icon(
+          onPressed: onFilters,
+          icon: Icon(
+            Icons.tune_rounded,
+            color: filtersActive ? _purple : _text,
+          ),
+          label: const Text('Filtros'),
+          style: OutlinedButton.styleFrom(
+            foregroundColor: _text,
+            minimumSize: const Size(104, 44),
+            side: BorderSide(color: filtersActive ? _purple : _border),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -794,6 +873,336 @@ class SocialServiceCard extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _DesktopServiceCard extends StatelessWidget {
+  const _DesktopServiceCard({
+    required this.post,
+    this.onRequireAccount,
+    this.onOpenMessages,
+  });
+
+  final core.ServicePost post;
+  final VoidCallback? onRequireAccount;
+  final VoidCallback? onOpenMessages;
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<Map<String, core.ServicePost>>(
+      valueListenable: SocialActionsStore.updatedPosts,
+      builder: (context, updates, _) {
+        final current = updates[post.id] ?? post;
+        final images = current.media.where((item) => item.isImage).toList();
+        final rating = current.averageRating;
+        final reviews = current.reviewCount;
+
+        return Container(
+          height: 270,
+          margin: const EdgeInsets.only(bottom: 16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            border: Border.all(color: _border),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: Row(
+            children: [
+              SizedBox(
+                width: 292,
+                height: double.infinity,
+                child: _DesktopServicePhoto(post: current, images: images),
+              ),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 17, 18, 15),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      InkWell(
+                        borderRadius: BorderRadius.circular(8),
+                        onTap: () => showOzirafProviderProfile(
+                          context,
+                          current,
+                          onContact: () => _openContactSheet(
+                            context,
+                            current,
+                            onRequireAccount: onRequireAccount,
+                            onOpenMessages: onOpenMessages,
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            _SocialAvatar(
+                              photo: current.providerPhoto,
+                              name: current.providerName,
+                              size: 40,
+                            ),
+                            const SizedBox(width: 9),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Flexible(
+                                        child: Text(
+                                          current.providerName,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.w900,
+                                            color: _text,
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 4),
+                                      const Icon(
+                                        Icons.verified_rounded,
+                                        size: 17,
+                                        color: Color(0xFF654CFF),
+                                      ),
+                                    ],
+                                  ),
+                                  Text(
+                                    current.providerProfession.trim().isEmpty
+                                        ? 'Profesional verificado'
+                                        : current.providerProfession,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                      fontSize: 11.5,
+                                      color: _muted,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            IconButton(
+                              tooltip: 'Más opciones',
+                              onPressed: () => _openPostOptions(
+                                context,
+                                current,
+                                onRequireAccount: onRequireAccount,
+                              ),
+                              icon: const Icon(Icons.more_horiz_rounded),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+                      Text(
+                        current.title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w900,
+                          color: _text,
+                        ),
+                      ),
+                      const SizedBox(height: 5),
+                      Text(
+                        current.description,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          height: 1.35,
+                          color: _muted,
+                        ),
+                      ),
+                      const Spacer(),
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.location_on_outlined,
+                            size: 17,
+                            color: _muted,
+                          ),
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: Text(
+                              '${current.city}, ${current.state}',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontSize: 12.5,
+                                color: _muted,
+                              ),
+                            ),
+                          ),
+                          if (rating != null && reviews > 0) ...[
+                            const Icon(
+                              Icons.star_rounded,
+                              color: Color(0xFFF5B942),
+                              size: 18,
+                            ),
+                            const SizedBox(width: 3),
+                            Text(
+                              '${rating.toStringAsFixed(1)} · $reviews opiniones',
+                              style: const TextStyle(
+                                fontSize: 12.5,
+                                fontWeight: FontWeight.w700,
+                                color: _text,
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                      const SizedBox(height: 14),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: RichText(
+                              text: TextSpan(
+                                style: const TextStyle(
+                                  color: _muted,
+                                  fontSize: 11,
+                                ),
+                                children: [
+                                  const TextSpan(text: 'Desde\n'),
+                                  TextSpan(
+                                    text: current.price,
+                                    style: const TextStyle(
+                                      color: _text,
+                                      fontSize: 22,
+                                      fontWeight: FontWeight.w900,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          IconButton(
+                            tooltip: 'Comentarios',
+                            onPressed: () => _openCommentsSheet(
+                              context,
+                              current,
+                              onRequireAccount: onRequireAccount,
+                            ),
+                            icon: const Icon(Icons.chat_bubble_outline_rounded),
+                          ),
+                          ValueListenableBuilder<Set<String>>(
+                            valueListenable: SocialActionsStore.savedPostIds,
+                            builder: (context, saved, _) {
+                              final active = saved.contains(current.id);
+                              return IconButton(
+                                tooltip: active ? 'Quitar guardado' : 'Guardar',
+                                onPressed: () => _setFavorite(
+                                  context,
+                                  current,
+                                  currentlySaved: active,
+                                  onRequireAccount: onRequireAccount,
+                                ),
+                                icon: Icon(
+                                  active
+                                      ? Icons.bookmark_rounded
+                                      : Icons.bookmark_border_rounded,
+                                  color: active ? _purple : _text,
+                                ),
+                              );
+                            },
+                          ),
+                          const SizedBox(width: 8),
+                          SizedBox(
+                            height: 42,
+                            child: FilledButton.icon(
+                              onPressed: () => _openContactSheet(
+                                context,
+                                current,
+                                onRequireAccount: onRequireAccount,
+                                onOpenMessages: onOpenMessages,
+                              ),
+                              icon: const Icon(Icons.chat_outlined, size: 18),
+                              label: const Text('Contactar'),
+                              style: FilledButton.styleFrom(
+                                backgroundColor: _purple,
+                                foregroundColor: Colors.white,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _DesktopServicePhoto extends StatelessWidget {
+  const _DesktopServicePhoto({required this.post, required this.images});
+
+  final core.ServicePost post;
+  final List<core.PostMediaItem> images;
+
+  @override
+  Widget build(BuildContext context) {
+    if (images.isEmpty) {
+      return Container(
+        color: _purpleSoft,
+        alignment: Alignment.center,
+        child: Icon(
+          _categoryIcon(post.category),
+          size: 72,
+          color: _purple.withValues(alpha: .45),
+        ),
+      );
+    }
+
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        Image.network(
+          images.first.url,
+          fit: BoxFit.cover,
+          errorBuilder: (_, _, _) => const ColoredBox(
+            color: Color(0xFFF0F2F7),
+            child: Center(
+              child: Icon(Icons.broken_image_outlined, color: _muted),
+            ),
+          ),
+        ),
+        Positioned(
+          left: 12,
+          bottom: 12,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+            decoration: BoxDecoration(
+              color: Colors.black54,
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.photo_library_outlined,
+                  size: 14,
+                  color: Colors.white,
+                ),
+                const SizedBox(width: 5),
+                Text(
+                  '${images.length} fotos',
+                  style: const TextStyle(
+                    fontSize: 11,
+                    color: Colors.white,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -1849,8 +2258,13 @@ class _SocialAvatar extends StatelessWidget {
 }
 
 class _DesktopAside extends StatelessWidget {
-  const _DesktopAside({required this.onPublish, required this.onOpenSaved});
+  const _DesktopAside({
+    required this.posts,
+    required this.onPublish,
+    required this.onOpenSaved,
+  });
 
+  final List<core.ServicePost> posts;
   final VoidCallback? onPublish;
   final VoidCallback? onOpenSaved;
 
@@ -1859,91 +2273,114 @@ class _DesktopAside extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.only(bottom: 24),
       children: [
-        _AsideCard(
-          icon: Icons.rocket_launch_outlined,
-          title: 'Publica tu servicio',
-          text: 'Conecta con nuevos clientes dentro de OZIRAF.',
-          action: 'Publicar ahora',
-          onPressed: onPublish,
-        ),
-        const SizedBox(height: 12),
-        _AsideCard(
-          icon: Icons.bookmark_outline,
-          title: 'Servicios guardados',
-          text: 'Vuelve a los anuncios que marcaste como favoritos.',
-          action: 'Ver guardados',
-          onPressed: onOpenSaved,
-        ),
-        const SizedBox(height: 12),
         Container(
           width: double.infinity,
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(8),
             border: Border.all(color: _border),
           ),
-          child: const Column(
+          child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'Categorías populares',
-                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w900),
+              const Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      'Servicios recientes',
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ),
+                ],
               ),
-              SizedBox(height: 12),
-              _PopularCategory(
-                icon: Icons.home_repair_service_outlined,
-                text: 'Hogar',
-              ),
-              _PopularCategory(icon: Icons.memory_outlined, text: 'Tecnología'),
-              _PopularCategory(
-                icon: Icons.self_improvement_outlined,
-                text: 'Bienestar',
-              ),
-              _PopularCategory(
-                icon: Icons.design_services_outlined,
-                text: 'Diseño',
-              ),
+              const SizedBox(height: 14),
+              if (posts.isEmpty)
+                const Text(
+                  'Aún no hay servicios publicados.',
+                  style: TextStyle(fontSize: 12, color: _muted),
+                )
+              else
+                ...List.generate(posts.length, (index) {
+                  final post = posts[index];
+                  return Column(
+                    children: [
+                      _RecentServiceRow(post: post),
+                      if (index < posts.length - 1)
+                        const Divider(height: 22, color: _border),
+                    ],
+                  );
+                }),
             ],
           ),
+        ),
+        const SizedBox(height: 14),
+        _AsideCard(
+          icon: Icons.campaign_outlined,
+          title: '¿Ofreces un servicio?',
+          text: 'Llega a más personas en tu zona.',
+          action: 'Publicar servicio',
+          onPressed: onPublish,
+        ),
+        const SizedBox(height: 12),
+        TextButton.icon(
+          onPressed: onOpenSaved,
+          icon: const Icon(Icons.bookmark_outline),
+          label: const Text('Ver servicios guardados'),
+          style: TextButton.styleFrom(foregroundColor: _muted),
         ),
       ],
     );
   }
 }
 
-class _PopularCategory extends StatelessWidget {
-  const _PopularCategory({required this.icon, required this.text});
+class _RecentServiceRow extends StatelessWidget {
+  const _RecentServiceRow({required this.post});
 
-  final IconData icon;
-  final String text;
+  final core.ServicePost post;
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 9),
-      child: Row(
-        children: [
-          Container(
-            width: 32,
-            height: 32,
-            decoration: BoxDecoration(
-              color: _purpleSoft,
-              borderRadius: BorderRadius.circular(9),
-            ),
-            child: Icon(icon, size: 17, color: _purple),
+    return Row(
+      children: [
+        Container(
+          width: 38,
+          height: 38,
+          decoration: BoxDecoration(
+            color: _purpleSoft,
+            borderRadius: BorderRadius.circular(8),
           ),
-          const SizedBox(width: 9),
-          Text(
-            text,
-            style: const TextStyle(
-              fontSize: 12.5,
-              fontWeight: FontWeight.w700,
-              color: Color(0xFF40434E),
-            ),
+          child: Icon(_categoryIcon(post.category), color: _purple, size: 20),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                post.title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w800,
+                  color: _text,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                '${post.city}, ${post.state}',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontSize: 11, color: _muted),
+              ),
+            ],
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
@@ -1970,7 +2407,7 @@ class _AsideCard extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(8),
         border: Border.all(color: _border),
       ),
       child: Column(
@@ -1981,7 +2418,7 @@ class _AsideCard extends StatelessWidget {
             height: 43,
             decoration: BoxDecoration(
               color: _purpleSoft,
-              borderRadius: BorderRadius.circular(13),
+              borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(icon, color: _purple, size: 23),
           ),
@@ -2009,7 +2446,7 @@ class _AsideCard extends StatelessWidget {
                 backgroundColor: _purple,
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(8),
                 ),
               ),
               child: Text(action),
