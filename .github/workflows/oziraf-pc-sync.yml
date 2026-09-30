@@ -1,0 +1,54 @@
+name: OZIRAF PC Source Sync
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: oziraf-pc-source-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: [self-hosted, Windows, X64, oziraf]
+    steps:
+      - name: Safely update the local source checkout
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $project = 'D:\OZIRAF'
+          function Invoke-ProjectGit {
+            $result = & git -C $project @args
+            if ($LASTEXITCODE -ne 0) {
+              throw "Git command failed: $($args -join ' ')"
+            }
+            return $result
+          }
+          if (-not (Test-Path (Join-Path $project '.git'))) {
+            throw 'D:\OZIRAF must be an existing Git checkout. No files were replaced.'
+          }
+          $branch = Invoke-ProjectGit symbolic-ref --short HEAD
+          if ($branch -ne 'main') {
+            throw 'The local checkout must be on main. No branch was changed.'
+          }
+          $origin = Invoke-ProjectGit remote get-url origin
+          if ($origin -notmatch '^(https://github\.com/|git@github\.com:)iaalejandrorizo-oziraf/oziraf(\.git)?/?$') {
+            throw 'The local origin does not match the OZIRAF repository.'
+          }
+          $changes = Invoke-ProjectGit status --porcelain --untracked-files=no
+          if ($changes) {
+            throw 'There are local tracked changes. Commit or save them before syncing. No local changes were discarded.'
+          }
+          Invoke-ProjectGit fetch origin main
+          & git -C $project merge-base --is-ancestor HEAD origin/main
+          if ($LASTEXITCODE -ne 0) {
+            throw 'Local commits are ahead or diverged. Sync stopped to preserve them.'
+          }
+          Invoke-ProjectGit merge --ff-only origin/main
+          $commit = Invoke-ProjectGit rev-parse HEAD
+          Write-Host "D:\OZIRAF synchronized at $commit"
+          "D:\OZIRAF synchronized at commit $commit" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8 -Append
