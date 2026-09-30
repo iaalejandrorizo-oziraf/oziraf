@@ -65,7 +65,11 @@ jobs:
 
       - name: Backend install
         if: env.TASK == 'backend-test' || env.TASK == 'backend-build' || env.TASK == 'all-checks'
-        run: npm ci
+        run: |
+          npm ci
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          npx prisma generate
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       - name: Backend test
         if: env.TASK == 'backend-test' || env.TASK == 'all-checks'
