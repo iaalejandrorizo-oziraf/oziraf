@@ -1,0 +1,35 @@
+name: OZIRAF PC Diagnostics
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  inspect:
+    runs-on: [self-hosted, Windows, X64, oziraf]
+    steps:
+      - name: Inspect local project and running services
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Continue'
+          $folders = @(Get-Item 'D:\OZIRAF')
+          for ($depth = 0; $depth -lt 3; $depth++) {
+            $next = @()
+            foreach ($folder in $folders) {
+              if (Test-Path (Join-Path $folder.FullName '.git')) {
+                Write-Host "GIT PROJECT: $($folder.FullName)"
+                git -C $folder.FullName status --short --branch --untracked-files=no
+              }
+              $next += Get-ChildItem $folder.FullName -Directory -Force -ErrorAction SilentlyContinue | Where-Object { $_.Name -notin @('actions-runner','tools','node_modules','.git','build','.dart_tool') }
+            }
+            $folders = $next
+          }
+          foreach ($url in @('http://127.0.0.1:3001/health','http://127.0.0.1:8092')) {
+            try {
+              $response = Invoke-WebRequest -Uri $url -UseBasicParsing -TimeoutSec 15
+              Write-Host "HTTP $($response.StatusCode): $url"
+            } catch {
+              Write-Host "HTTP FAILED: $url : $($_.Exception.Message)"
+            }
+          }
+          docker ps --format '{{.Names}} {{.Status}} {{.Ports}}'
+          exit 0
